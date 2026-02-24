@@ -1,35 +1,24 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { ThemeProvider } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
+import theme from '@/theme'
+import LoginPage from '@/features/auth/LoginPage'
+import { useAuthStore } from '@/stores/auth.store'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      {isAuthenticated ? (
+        <div style={{ padding: 32 }}>
+          <h1>Dashboard (à venir)</h1>
+          <p>Bienvenue, vous êtes connecté.</p>
+          <button onClick={() => useAuthStore.getState().logout()}>Se déconnecter</button>
+        </div>
+      ) : (
+        <LoginPage />
+      )}
+    </ThemeProvider>
   )
 }
-
-export default App
