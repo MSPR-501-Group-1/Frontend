@@ -4,7 +4,44 @@ export enum UserRole {
     DATA_ENGINEER = 'data_engineer',
     PRODUCT_OWNER = 'product_owner',
     DIRECTION = 'direction',
-    PARTNER = 'partner',
+    B2B_PARTNER = 'b2b_partner',
+}
+
+// Role labels (i18n-ready)
+export const ROLE_LABELS: Record<UserRole, string> = {
+    [UserRole.ADMIN]: 'Administrateur',
+    [UserRole.DATA_ENGINEER]: 'Data Engineer',
+    [UserRole.PRODUCT_OWNER]: 'Product Owner',
+    [UserRole.DIRECTION]: 'Direction',
+    [UserRole.B2B_PARTNER]: 'Partenaire B2B',
+};
+
+// ─── Pipeline / Validation enums ────────────────────────────
+
+/** Sources de données du pipeline ETL */
+export enum DataSource {
+    NUTRITION = 'nutrition',
+    EXERCISES = 'exercises',
+    USER_PROFILES = 'user_profiles',
+    FITNESS_TRACKER = 'fitness_tracker',
+    BIOMETRIC = 'biometric',
+}
+
+/** Statuts du workflow de validation des données */
+export enum ValidationStatus {
+    PENDING = 'pending',
+    IN_REVIEW = 'in_review',
+    APPROVED = 'approved',
+    REJECTED = 'rejected',
+    CORRECTED = 'corrected',
+}
+
+/** Formats d'export supportés */
+export enum ExportFormat {
+    CSV = 'csv',
+    JSON = 'json',
+    PDF = 'pdf',
+    PNG = 'png',
 }
 
 // Basic user type
