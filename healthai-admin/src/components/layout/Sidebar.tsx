@@ -14,6 +14,8 @@ import {
     Dashboard,
     BugReport,
     Restaurant,
+    FitnessCenter,
+    MonitorHeart,
     Security,
     LocalHospital,
 } from '@mui/icons-material';
@@ -36,6 +38,8 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Dashboard', path: '/', icon: <Dashboard /> },
     { label: 'Anomalies', path: '/anomalies', icon: <BugReport /> },
     { label: 'Nutrition', path: '/nutrition', icon: <Restaurant /> },
+    { label: 'Fitness', path: '/fitness', icon: <FitnessCenter /> },
+    { label: 'Biométrique', path: '/biometric', icon: <MonitorHeart /> },
     { label: 'Audit', path: '/audit', icon: <Security />, roles: [UserRole.ADMIN] },
 ];
 

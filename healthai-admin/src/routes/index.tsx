@@ -6,6 +6,8 @@ import LoginPage from '@/features/auth/LoginPage';
 import DashboardPage from '@/features/dashboard/DashboardPage';
 import AnomaliesPage from '@/features/anomalies/AnomaliesPage';
 import NutritionPage from '@/features/analytics/NutritionPage';
+import FitnessPage from '@/features/analytics/FitnessPage';
+import BiometricPage from '@/features/analytics/BiometricPage';
 import AuditPage from '@/features/admin/AuditPage';
 import ForbiddenPage from '@/features/errors/ForbiddenPage';
 
@@ -33,6 +35,8 @@ export const router = createBrowserRouter([
             { index: true, element: <DashboardPage /> },
             { path: 'anomalies', element: <AnomaliesPage /> },
             { path: 'nutrition', element: <NutritionPage /> },
+            { path: 'fitness', element: <FitnessPage /> },
+            { path: 'biometric', element: <BiometricPage /> },
             {
                 path: 'audit',
                 element: (
