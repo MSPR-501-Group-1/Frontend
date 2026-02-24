@@ -59,3 +59,14 @@ export interface DashboardData {
     dataIngestion: MultiSeriesPoint[];      // stacked area — ingestion by source
     anomalyTrend: MultiSeriesPoint[];       // composed — new vs resolved anomalies
 }
+
+// ─── Analytics page models ──────────────────────────────────
+
+export type DateRange = '7d' | '30d' | '90d';
+
+export interface AnalyticsPageData {
+    kpis: BusinessKPI[];
+    timeSeries: TimeSeriesPoint[];
+    breakdown: CategoryDataPoint[];
+    distribution: CategoryDataPoint[];
+}

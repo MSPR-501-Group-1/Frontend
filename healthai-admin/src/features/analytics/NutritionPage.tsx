@@ -1,12 +1,19 @@
-import { Typography, Box } from '@mui/material';
+import AnalyticsPageLayout from '@/components/analytics/AnalyticsPageLayout';
+import { nutritionData } from '@/mocks/analytics';
 
 export default function NutritionPage() {
     return (
-        <Box>
-            <Typography variant="h4">Nutrition</Typography>
-            <Typography color="text.secondary" sx={{ mt: 1 }}>
-                Analyse nutritionnelle (à venir Semaine 5)
-            </Typography>
-        </Box>
+        <AnalyticsPageLayout
+            title="Nutrition"
+            subtitle="Suivi nutritionnel des utilisateurs — calories, macronutriments et habitudes alimentaires"
+            data={nutritionData}
+            chartConfig={{
+                label: 'Évolution des calories',
+                color: '#F59E0B',
+                yAxisUnit: 'kcal',
+            }}
+            breakdownTitle="Répartition macronutriments"
+            distributionTitle="Calories par repas"
+        />
     );
 }
