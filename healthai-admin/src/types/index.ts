@@ -16,3 +16,39 @@ export interface User {
     role: UserRole;
     avatar?: string;
 }
+
+// ─── Business KPI ───────────────────────────────────────────
+
+export type KPIStatus = 'success' | 'warning' | 'error';
+
+export interface BusinessKPI {
+    id: string;
+    label: string;
+    value: string | number;
+    unit?: string;
+    trend?: number;       // percentage variation (positive = up)
+    target?: number;
+    status: KPIStatus;
+}
+
+// ─── Chart data models ──────────────────────────────────────
+
+export interface TimeSeriesPoint {
+    date: string;       // ISO date or label (e.g. "2026-01-15")
+    value: number;
+    target?: number;
+}
+
+export interface CategoryDataPoint {
+    name: string;
+    value: number;
+    color?: string;
+}
+
+export interface DashboardData {
+    kpis: BusinessKPI[];
+    userActivity: TimeSeriesPoint[];
+    dataQualityTrend: TimeSeriesPoint[];
+    dataSources: CategoryDataPoint[];
+    anomaliesByType: CategoryDataPoint[];
+}
