@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import {
     Dashboard,
+    VerifiedUser,
     BugReport,
     Restaurant,
     FitnessCenter,
@@ -36,6 +37,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
     { label: 'Dashboard', path: '/', icon: <Dashboard /> },
+    { label: 'Qualité données', path: '/data-quality', icon: <VerifiedUser /> },
     { label: 'Anomalies', path: '/anomalies', icon: <BugReport /> },
     { label: 'Nutrition', path: '/nutrition', icon: <Restaurant /> },
     { label: 'Fitness', path: '/fitness', icon: <FitnessCenter /> },

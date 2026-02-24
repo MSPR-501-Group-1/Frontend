@@ -5,6 +5,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import LoginPage from '@/features/auth/LoginPage';
 import DashboardPage from '@/features/dashboard/DashboardPage';
 import AnomaliesPage from '@/features/anomalies/AnomaliesPage';
+import DataQualityPage from '@/features/data-quality/DataQualityPage';
 import NutritionPage from '@/features/analytics/NutritionPage';
 import FitnessPage from '@/features/analytics/FitnessPage';
 import BiometricPage from '@/features/analytics/BiometricPage';
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
         ),
         children: [
             { index: true, element: <DashboardPage /> },
+            { path: 'data-quality', element: <DataQualityPage /> },
             { path: 'anomalies', element: <AnomaliesPage /> },
             { path: 'nutrition', element: <NutritionPage /> },
             { path: 'fitness', element: <FitnessPage /> },

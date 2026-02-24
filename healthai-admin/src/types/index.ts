@@ -70,3 +70,42 @@ export interface AnalyticsPageData {
     breakdown: CategoryDataPoint[];
     distribution: CategoryDataPoint[];
 }
+
+// ─── Data Quality models ────────────────────────────────────
+
+export interface QualityDimension {
+    id: string;
+    label: string;
+    score: number;         // 0–100
+    description: string;
+    status: KPIStatus;
+}
+
+export interface DataQualityScore {
+    overall: number;       // 0–100
+    dimensions: QualityDimension[];
+    history: TimeSeriesPoint[];
+}
+
+// ─── Anomalies models ───────────────────────────────────────
+
+export type AnomalySeverity = 'critical' | 'high' | 'medium' | 'low';
+export type AnomalyStatus = 'open' | 'in_review' | 'corrected' | 'dismissed';
+export type AnomalyType = 'out_of_range' | 'duplicate' | 'missing' | 'inconsistent' | 'format_error';
+
+export interface Anomaly {
+    id: string;
+    detectedAt: string;         // ISO date
+    source: string;             // e.g. "Nutrition API", "Fitness Tracker"
+    field: string;              // e.g. "heart_rate", "calories"
+    type: AnomalyType;
+    severity: AnomalySeverity;
+    status: AnomalyStatus;
+    description: string;
+    originalValue: string;
+    suggestedValue?: string;
+    correctedValue?: string;
+    correctedBy?: string;
+    correctedAt?: string;
+    justification?: string;
+}
