@@ -8,6 +8,7 @@ import {
     Typography,
     Box,
     Divider,
+    Chip,
 } from '@mui/material';
 import {
     Dashboard,
@@ -16,24 +17,39 @@ import {
     Security,
     LocalHospital,
 } from '@mui/icons-material';
+import { useAuthStore } from '@/stores/auth.store';
+import { UserRole } from '@/types';
 
 interface SidebarProps {
     open: boolean;
     width: number;
 }
 
-const NAV_ITEMS = [
+interface NavItem {
+    label: string;
+    path: string;
+    icon: React.ReactNode;
+    roles?: UserRole[]; // undefined = visible to all authenticated users
+}
+
+const NAV_ITEMS: NavItem[] = [
     { label: 'Dashboard', path: '/', icon: <Dashboard /> },
     { label: 'Anomalies', path: '/anomalies', icon: <BugReport /> },
     { label: 'Nutrition', path: '/nutrition', icon: <Restaurant /> },
-    { label: 'Audit', path: '/audit', icon: <Security /> },
+    { label: 'Audit', path: '/audit', icon: <Security />, roles: [UserRole.ADMIN] },
 ];
 
 export default function Sidebar({ open, width }: SidebarProps) {
     const location = useLocation();
     const navigate = useNavigate();
+    const user = useAuthStore((s) => s.user);
 
     if (!open) return null;
+
+    // Filter nav items based on user role
+    const visibleItems = NAV_ITEMS.filter(
+        (item) => !item.roles || (user && item.roles.includes(user.role))
+    );
 
     return (
         <Drawer
@@ -59,9 +75,22 @@ export default function Sidebar({ open, width }: SidebarProps) {
 
             <Divider />
 
+            {/* User role badge */}
+            {user && (
+                <Box sx={{ px: 2, py: 1.5 }}>
+                    <Chip
+                        label={user.role.replace('_', ' ').toUpperCase()}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        sx={{ fontWeight: 600, fontSize: '0.7rem' }}
+                    />
+                </Box>
+            )}
+
             {/* Navigation */}
-            <List sx={{ px: 1, pt: 1 }}>
-                {NAV_ITEMS.map((item) => {
+            <List sx={{ px: 1, pt: 0 }}>
+                {visibleItems.map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
                         <ListItemButton

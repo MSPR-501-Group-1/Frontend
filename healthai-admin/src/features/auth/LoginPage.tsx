@@ -118,13 +118,16 @@ export default function LoginPage() {
                         </Button>
                     </Box>
 
-                    {/* Dev hint */}
+                    {/* Dev hint — available mock accounts */}
                     <Alert severity="info" sx={{ mt: 3 }} icon={false}>
-                        <Typography variant="caption" display="block">
-                            <strong>Mode développement</strong>
+                        <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
+                            <strong>Comptes de démonstration</strong>
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                            Email : admin@healthai.fr / Mot de passe : password
+                        <Typography variant="caption" color="text.secondary" component="div">
+                            <strong>Admin :</strong> admin@healthai.fr<br />
+                            <strong>Data Engineer :</strong> data@healthai.fr<br />
+                            <strong>Direction :</strong> direction@healthai.fr<br />
+                            Mot de passe : <em>password</em>
                         </Typography>
                     </Alert>
                 </CardContent>

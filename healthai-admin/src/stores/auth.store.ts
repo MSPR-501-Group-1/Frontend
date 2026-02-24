@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '@/types';
+import { UserRole } from '@/types';
 
 interface AuthState {
     user: User | null;
@@ -10,14 +11,29 @@ interface AuthState {
     logout: () => void;
 }
 
-// Fake credentials for development
-const MOCK_USER: User = {
-    id: '1',
-    email: 'admin@healthai.fr',
-    firstName: 'Marie',
-    lastName: 'Dupont',
-    role: 'admin' as User['role'],
-    avatar: undefined,
+// Mock users — multiple roles for RBAC demonstration
+const MOCK_USERS: Record<string, User> = {
+    'admin@healthai.fr': {
+        id: '1',
+        email: 'admin@healthai.fr',
+        firstName: 'Marie',
+        lastName: 'Dupont',
+        role: UserRole.ADMIN,
+    },
+    'data@healthai.fr': {
+        id: '2',
+        email: 'data@healthai.fr',
+        firstName: 'Lucas',
+        lastName: 'Martin',
+        role: UserRole.DATA_ENGINEER,
+    },
+    'direction@healthai.fr': {
+        id: '3',
+        email: 'direction@healthai.fr',
+        firstName: 'Sophie',
+        lastName: 'Bernard',
+        role: UserRole.DIRECTION,
+    },
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -32,8 +48,9 @@ export const useAuthStore = create<AuthState>()(
                 // Simulate API delay
                 await new Promise((resolve) => setTimeout(resolve, 800));
 
-                if (email === 'admin@healthai.fr') {
-                    set({ user: MOCK_USER, isAuthenticated: true, isLoading: false });
+                const mockUser = MOCK_USERS[email];
+                if (mockUser) {
+                    set({ user: mockUser, isAuthenticated: true, isLoading: false });
                 } else {
                     set({ isLoading: false });
                     throw new Error('Identifiants invalides');

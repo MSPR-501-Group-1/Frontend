@@ -1,11 +1,13 @@
 import { createBrowserRouter } from 'react-router-dom';
-import { RequireAuth, RedirectIfAuth } from './guards';
+import { RequireAuth, RequireRole, RedirectIfAuth } from './guards';
+import { UserRole } from '@/types';
 import AppLayout from '@/components/layout/AppLayout';
 import LoginPage from '@/features/auth/LoginPage';
 import DashboardPage from '@/features/dashboard/DashboardPage';
 import AnomaliesPage from '@/features/anomalies/AnomaliesPage';
 import NutritionPage from '@/features/analytics/NutritionPage';
 import AuditPage from '@/features/admin/AuditPage';
+import ForbiddenPage from '@/features/errors/ForbiddenPage';
 
 export const router = createBrowserRouter([
     {
@@ -15,6 +17,10 @@ export const router = createBrowserRouter([
                 <LoginPage />
             </RedirectIfAuth>
         ),
+    },
+    {
+        path: '/403',
+        element: <ForbiddenPage />,
     },
     {
         path: '/',
@@ -27,7 +33,14 @@ export const router = createBrowserRouter([
             { index: true, element: <DashboardPage /> },
             { path: 'anomalies', element: <AnomaliesPage /> },
             { path: 'nutrition', element: <NutritionPage /> },
-            { path: 'audit', element: <AuditPage /> },
+            {
+                path: 'audit',
+                element: (
+                    <RequireRole roles={[UserRole.ADMIN]}>
+                        <AuditPage />
+                    </RequireRole>
+                ),
+            },
         ],
     },
     {
