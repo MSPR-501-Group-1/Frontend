@@ -126,7 +126,9 @@ export default function LoginPage() {
                         <Typography variant="caption" color="text.secondary" component="div">
                             <strong>Admin :</strong> admin@healthai.fr<br />
                             <strong>Data Engineer :</strong> data@healthai.fr<br />
+                            <strong>Product Owner :</strong> po@healthai.fr<br />
                             <strong>Direction :</strong> direction@healthai.fr<br />
+                            <strong>Partenaire B2B :</strong> partner@healthai.fr<br />
                             Mot de passe : <em>password</em>
                         </Typography>
                     </Alert>

@@ -29,6 +29,8 @@ const MOCK_USERS: Record<string, User> = {
     'admin@healthai.fr': { id: '1', email: 'admin@healthai.fr', firstName: 'Marie', lastName: 'Dupont', role: UserRole.ADMIN },
     'data@healthai.fr': { id: '2', email: 'data@healthai.fr', firstName: 'Lucas', lastName: 'Martin', role: UserRole.DATA_ENGINEER },
     'direction@healthai.fr': { id: '3', email: 'direction@healthai.fr', firstName: 'Sophie', lastName: 'Bernard', role: UserRole.DIRECTION },
+    'po@healthai.fr': { id: '4', email: 'po@healthai.fr', firstName: 'Thomas', lastName: 'Lefort', role: UserRole.PRODUCT_OWNER },
+    'partner@healthai.fr': { id: '5', email: 'partner@healthai.fr', firstName: 'Claire', lastName: 'Moreau', role: UserRole.B2B_PARTNER },
 };
 
 // ─── Public API ─────────────────────────────────────────────
