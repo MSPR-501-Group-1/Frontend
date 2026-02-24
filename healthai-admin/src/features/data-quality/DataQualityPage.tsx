@@ -1,147 +1,22 @@
 import { useMemo } from 'react';
-import { Box, Typography, CircularProgress, Alert, Paper, LinearProgress, Chip } from '@mui/material';
+import { Box, Typography, Paper, Chip } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import {
-    AreaChart,
-    Area,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    ReferenceLine,
+    AreaChart, Area, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { fetchDataQualityScore } from '@/services/data-quality.service';
-import type { KPIStatus } from '@/types';
+import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
+import ScoreGauge from '@/components/data-quality/ScoreGauge';
+import DimensionCard from '@/components/data-quality/DimensionCard';
+import { TOOLTIP_STYLE, GRID_DASH } from '@/lib/chart.constants';
+import { scoreToLabel, scoreToStatus, STATUS_MUI_COLOR } from '@/lib/status.utils';
 
-// ─── Score Gauge (circular) ────────────────────────────────
-
-const STATUS_COLOR: Record<KPIStatus, string> = {
-    success: '#16A34A',
-    warning: '#F59E0B',
-    error: '#DC2626',
-};
-
-function scoreToStatus(score: number): KPIStatus {
-    if (score >= 90) return 'success';
-    if (score >= 75) return 'warning';
-    return 'error';
-}
-
-function ScoreGauge({ score }: { score: number }) {
-    const status = scoreToStatus(score);
-    const color = STATUS_COLOR[status];
-
-    return (
-        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-            {/* Background track */}
-            <CircularProgress
-                variant="determinate"
-                value={100}
-                size={160}
-                thickness={6}
-                sx={{ color: 'grey.200' }}
-            />
-            {/* Foreground arc */}
-            <CircularProgress
-                variant="determinate"
-                value={score}
-                size={160}
-                thickness={6}
-                sx={{
-                    color,
-                    position: 'absolute',
-                    left: 0,
-                    '& .MuiCircularProgress-circle': {
-                        strokeLinecap: 'round',
-                    },
-                }}
-            />
-            {/* Center label */}
-            <Box
-                sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <Typography variant="h3" fontWeight={800} sx={{ color }}>
-                    {score}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    / 100
-                </Typography>
-            </Box>
-        </Box>
-    );
-}
-
-// ─── Dimension card ─────────────────────────────────────────
-
-interface DimensionCardProps {
-    label: string;
-    score: number;
-    description: string;
-    status: KPIStatus;
-}
-
-function DimensionCard({ label, score, description, status }: DimensionCardProps) {
-    const color = STATUS_COLOR[status];
-
-    return (
-        <Paper
-            elevation={0}
-            sx={{
-                p: 2.5,
-                borderLeft: 4,
-                borderColor: color,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
-            }}
-        >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="subtitle1" fontWeight={600}>
-                    {label}
-                </Typography>
-                <Chip
-                    label={`${score}%`}
-                    size="small"
-                    sx={{ fontWeight: 700, bgcolor: `${color}18`, color }}
-                />
-            </Box>
-            <LinearProgress
-                variant="determinate"
-                value={score}
-                sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    bgcolor: 'grey.100',
-                    '& .MuiLinearProgress-bar': {
-                        borderRadius: 4,
-                        bgcolor: color,
-                    },
-                }}
-            />
-            <Typography variant="body2" color="text.secondary">
-                {description}
-            </Typography>
-        </Paper>
-    );
-}
-
-// ─── History chart ──────────────────────────────────────────
+// ─── History chart (co-located — only used here) ────────────
 
 function HistoryChart({ data }: { data: { date: string; value: number; target?: number }[] }) {
     const chartData = useMemo(
-        () =>
-            data.map((d) => ({
-                ...d,
-                label: d.date.slice(5), // MM-DD
-            })),
+        () => data.map((d) => ({ ...d, label: d.date.slice(5) })),
         [data],
     );
 
@@ -154,11 +29,11 @@ function HistoryChart({ data }: { data: { date: string; value: number; target?: 
                         <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
                     </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid strokeDasharray={GRID_DASH} vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 12 }} tickLine={false} />
                 <YAxis domain={[60, 100]} tick={{ fontSize: 12 }} tickLine={false} />
                 <Tooltip
-                    contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}
+                    contentStyle={TOOLTIP_STYLE}
                     formatter={(v) => [`${Number(v)}%`, 'Score']}
                 />
                 <ReferenceLine y={90} strokeDasharray="6 4" stroke="#16A34A" label={{ value: 'Objectif 90%', fontSize: 11, fill: '#16A34A' }} />
@@ -184,30 +59,12 @@ export default function DataQualityPage() {
         queryFn: fetchDataQualityScore,
     });
 
-    if (isLoading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
-
-    if (isError || !data) {
-        return (
-            <Alert severity="error" sx={{ m: 2 }}>
-                Erreur lors du chargement des données de qualité.
-            </Alert>
-        );
-    }
+    if (isLoading) return <LoadingState />;
+    if (isError || !data) return <ErrorState message="Erreur lors du chargement des données de qualité." />;
 
     return (
         <Box>
-            <Typography variant="h4" gutterBottom>
-                Qualité des données
-            </Typography>
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
-                Indice de qualité global (DQI) et scores par dimension
-            </Typography>
+            <PageHeader title="Qualité des données" subtitle="Indice de qualité global (DQI) et scores par dimension" />
 
             {/* Top section : gauge + history */}
             <Box
@@ -234,9 +91,9 @@ export default function DataQualityPage() {
                     </Typography>
                     <ScoreGauge score={data.overall} />
                     <Chip
-                        label={data.overall >= 90 ? 'Excellent' : data.overall >= 75 ? 'Acceptable' : 'Critique'}
+                        label={scoreToLabel(data.overall)}
                         size="small"
-                        color={data.overall >= 90 ? 'success' : data.overall >= 75 ? 'warning' : 'error'}
+                        color={STATUS_MUI_COLOR[scoreToStatus(data.overall)]}
                         sx={{ fontWeight: 600 }}
                     />
                 </Paper>
