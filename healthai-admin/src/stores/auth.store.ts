@@ -1,7 +1,13 @@
+/**
+ * Auth store — manages authentication state.
+ *
+ * HTTP logic is delegated to auth.service.ts (SRP).
+ * The store only owns state transitions.
+ */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { loginUser, logoutUser } from '@/services/auth.service';
 import type { User } from '@/types';
-import { UserRole } from '@/types';
 
 interface AuthState {
     user: User | null;
@@ -11,31 +17,6 @@ interface AuthState {
     logout: () => void;
 }
 
-// Mock users — multiple roles for RBAC demonstration
-const MOCK_USERS: Record<string, User> = {
-    'admin@healthai.fr': {
-        id: '1',
-        email: 'admin@healthai.fr',
-        firstName: 'Marie',
-        lastName: 'Dupont',
-        role: UserRole.ADMIN,
-    },
-    'data@healthai.fr': {
-        id: '2',
-        email: 'data@healthai.fr',
-        firstName: 'Lucas',
-        lastName: 'Martin',
-        role: UserRole.DATA_ENGINEER,
-    },
-    'direction@healthai.fr': {
-        id: '3',
-        email: 'direction@healthai.fr',
-        firstName: 'Sophie',
-        lastName: 'Bernard',
-        role: UserRole.DIRECTION,
-    },
-};
-
 export const useAuthStore = create<AuthState>()(
     persist(
         (set) => ({
@@ -43,21 +24,19 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             isLoading: false,
 
-            login: async (email: string, _password: string) => {
+            login: async (email: string, password: string) => {
                 set({ isLoading: true });
-                // Simulate API delay
-                await new Promise((resolve) => setTimeout(resolve, 800));
-
-                const mockUser = MOCK_USERS[email];
-                if (mockUser) {
-                    set({ user: mockUser, isAuthenticated: true, isLoading: false });
-                } else {
+                try {
+                    const { user } = await loginUser(email, password);
+                    set({ user, isAuthenticated: true, isLoading: false });
+                } catch (err) {
                     set({ isLoading: false });
-                    throw new Error('Identifiants invalides');
+                    throw err;
                 }
             },
 
             logout: () => {
+                logoutUser().catch(() => { /* best-effort server logout */ });
                 set({ user: null, isAuthenticated: false });
             },
         }),
