@@ -7,16 +7,15 @@ import {
     Avatar,
     Tooltip,
 } from '@mui/material';
-import { Menu as MenuIcon, Logout } from '@mui/icons-material';
+import { Logout } from '@mui/icons-material';
 import { useAuthStore } from '@/stores/auth.store';
 
 interface TopbarProps {
-    onToggleSidebar: () => void;
-    sidebarOpen: boolean;
+    /** Current sidebar width (full or collapsed) — used to offset the AppBar */
     drawerWidth: number;
 }
 
-export default function Topbar({ onToggleSidebar, sidebarOpen, drawerWidth }: TopbarProps) {
+export default function Topbar({ drawerWidth }: TopbarProps) {
     const { user, logout } = useAuthStore();
 
     return (
@@ -28,20 +27,12 @@ export default function Topbar({ onToggleSidebar, sidebarOpen, drawerWidth }: To
                 color: 'text.primary',
                 borderBottom: '1px solid',
                 borderColor: 'divider',
-                left: sidebarOpen ? `${drawerWidth}px` : 0,
-                width: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : '100%',
-                transition: 'left 0.3s, width 0.3s',
+                left: `${drawerWidth}px`,
+                width: `calc(100% - ${drawerWidth}px)`,
+                transition: 'left 0.25s, width 0.25s',
             }}
         >
             <Toolbar>
-                <IconButton
-                    aria-label="Toggle sidebar"
-                    onClick={onToggleSidebar}
-                    sx={{ mr: 2 }}
-                >
-                    <MenuIcon />
-                </IconButton>
-
                 <Typography variant="h6" sx={{ flexGrow: 1 }} />
 
                 {/* User info */}
