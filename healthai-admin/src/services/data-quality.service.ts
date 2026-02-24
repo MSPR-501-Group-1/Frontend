@@ -1,56 +1,17 @@
-import { format, subDays } from 'date-fns';
+/**
+ * Data Quality service — public API consumed by React Query hooks.
+ *
+ * @see https://tanstack.com/query/latest/docs/react/guides/query-functions
+ */
+
+import { apiClient } from '@/api';
 import type { DataQualityScore } from '@/types';
+import { dataQualityMock } from '@/mocks/data-quality.mock';
 
-/** Simulates an API call to fetch data quality scores */
+const USE_MOCK = true;
+
+/** Fetch current data quality scores + 30-day history. */
 export async function fetchDataQualityScore(): Promise<DataQualityScore> {
-    // Simulate network latency (300–800ms)
-    await new Promise((r) => setTimeout(r, 300 + Math.random() * 500));
-
-    const today = new Date();
-
-    return {
-        overall: 87,
-        dimensions: [
-            {
-                id: 'completeness',
-                label: 'Complétude',
-                score: 92,
-                description: 'Proportion de champs requis renseignés',
-                status: 'success',
-            },
-            {
-                id: 'consistency',
-                label: 'Cohérence',
-                score: 85,
-                description: 'Concordance entre sources de données',
-                status: 'warning',
-            },
-            {
-                id: 'freshness',
-                label: 'Fraîcheur',
-                score: 78,
-                description: 'Données mises à jour dans les délais attendus',
-                status: 'warning',
-            },
-            {
-                id: 'accuracy',
-                label: 'Exactitude',
-                score: 94,
-                description: 'Valeurs respectant les plages attendues',
-                status: 'success',
-            },
-            {
-                id: 'uniqueness',
-                label: 'Unicité',
-                score: 88,
-                description: 'Absence de doublons dans les jeux de données',
-                status: 'success',
-            },
-        ],
-        history: Array.from({ length: 30 }, (_, i) => ({
-            date: format(subDays(today, 29 - i), 'yyyy-MM-dd'),
-            value: Math.round(82 + Math.random() * 10),
-            target: 90,
-        })),
-    };
+    if (USE_MOCK) return dataQualityMock.fetchScore();
+    return apiClient.get<DataQualityScore>('/data-quality/score');
 }
