@@ -11,6 +11,7 @@ import FitnessPage from '@/features/analytics/FitnessPage';
 import BiometricPage from '@/features/analytics/BiometricPage';
 import AuditPage from '@/features/admin/AuditPage';
 import ForbiddenPage from '@/features/errors/ForbiddenPage';
+import NotFoundPage from '@/features/errors/NotFoundPage';
 
 export const router = createBrowserRouter([
     {
@@ -51,11 +52,6 @@ export const router = createBrowserRouter([
     },
     {
         path: '*',
-        element: (
-            <div style={{ padding: 32, textAlign: 'center' }}>
-                <h1>404</h1>
-                <p>Page introuvable</p>
-            </div>
-        ),
+        element: <NotFoundPage />,
     },
 ]);
