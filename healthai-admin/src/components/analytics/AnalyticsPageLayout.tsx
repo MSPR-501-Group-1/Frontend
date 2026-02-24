@@ -8,6 +8,12 @@ import {
 import KPICard from '@/components/dashboard/KPICard';
 import DateRangeSelector from '@/components/analytics/DateRangeSelector';
 import { useDateRange } from '@/hooks/useDateRange';
+import {
+    AXIS_TICK_STYLE, AXIS_LINE_STYLE, GRID_STROKE, GRID_DASH,
+    TOOLTIP_STYLE, ANIMATION_DURATION, LABEL_LINE_STYLE, REFERENCE_LINE_COLORS,
+    LEGEND_STYLE, LEGEND_ICON_SIZE, LEGEND_ICON_TYPE,
+} from '@/lib/chart.constants';
+import { formatShortDate, formatTooltipDate, formatWithUnit } from '@/lib/formatters';
 import type { AnalyticsPageData, CategoryDataPoint } from '@/types';
 
 interface AnalyticsPageLayoutProps {
@@ -25,13 +31,8 @@ interface AnalyticsPageLayoutProps {
     distributionTitle: string;
 }
 
-/** Reusable tooltip style for all charts */
-const tooltipStyle = {
-    borderRadius: 8,
-    border: '1px solid #E2E8F0',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-    fontSize: 13,
-};
+/** Reusable tooltip style alias — now sourced from shared constants. */
+const tooltipStyle = TOOLTIP_STYLE;
 
 /**
  * Shared layout template for all Analytics pages (Nutrition / Fitness / Biometric).
@@ -103,29 +104,22 @@ export default function AnalyticsPageLayout({
                                     <stop offset="95%" stopColor={chartConfig.color} stopOpacity={0.02} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                            <CartesianGrid strokeDasharray={GRID_DASH} stroke={GRID_STROKE} />
                             <XAxis
                                 dataKey="date"
-                                tick={{ fontSize: 11, fill: '#94A3B8' }}
-                                tickFormatter={(d: string) => {
-                                    const date = new Date(d);
-                                    return `${date.getDate()}/${date.getMonth() + 1}`;
-                                }}
-                                axisLine={{ stroke: '#E2E8F0' }}
+                                tick={AXIS_TICK_STYLE}
+                                tickFormatter={formatShortDate}
+                                axisLine={AXIS_LINE_STYLE}
                             />
                             <YAxis
-                                tick={{ fontSize: 11, fill: '#94A3B8' }}
-                                axisLine={{ stroke: '#E2E8F0' }}
+                                tick={AXIS_TICK_STYLE}
+                                axisLine={AXIS_LINE_STYLE}
                             />
                             <Tooltip
                                 contentStyle={tooltipStyle}
-                                labelFormatter={(d) =>
-                                    new Date(String(d)).toLocaleDateString('fr-FR', {
-                                        weekday: 'short', day: 'numeric', month: 'short',
-                                    })
-                                }
+                                labelFormatter={formatTooltipDate}
                                 formatter={(v) => [
-                                    `${Number(v).toLocaleString('fr-FR')}${chartConfig.yAxisUnit ? ` ${chartConfig.yAxisUnit}` : ''}`,
+                                    formatWithUnit(Number(v), chartConfig.yAxisUnit),
                                     chartConfig.label,
                                 ]}
                             />
@@ -137,21 +131,21 @@ export default function AnalyticsPageLayout({
                                 fill={`url(#${gradientId})`}
                                 dot={false}
                                 activeDot={{ r: 5, strokeWidth: 2, fill: '#fff', stroke: chartConfig.color }}
-                                animationDuration={1000}
+                                animationDuration={ANIMATION_DURATION}
                             />
                             {targetValue !== undefined && (
                                 <ReferenceLine
                                     y={targetValue}
-                                    stroke="#DC2626"
+                                    stroke={REFERENCE_LINE_COLORS.target}
                                     strokeDasharray="6 4"
-                                    label={{ value: 'Objectif', fill: '#DC2626', fontSize: 11 }}
+                                    label={{ value: 'Objectif', fill: REFERENCE_LINE_COLORS.target, fontSize: 11 }}
                                 />
                             )}
                             <ReferenceLine
                                 y={avg}
-                                stroke="#94A3B8"
+                                stroke={REFERENCE_LINE_COLORS.average}
                                 strokeDasharray="3 3"
-                                label={{ value: `Moy.`, fill: '#94A3B8', fontSize: 11 }}
+                                label={{ value: `Moy.`, fill: REFERENCE_LINE_COLORS.average, fontSize: 11 }}
                             />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -190,11 +184,11 @@ function BreakdownPieChart({ data, title }: { data: CategoryDataPoint[]; title: 
                             outerRadius={100}
                             paddingAngle={3}
                             cornerRadius={4}
-                            animationDuration={900}
+                            animationDuration={ANIMATION_DURATION}
                             label={({ name, percent }) =>
                                 `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
                             }
-                            labelLine={{ stroke: '#94A3B8', strokeWidth: 1 }}
+                            labelLine={LABEL_LINE_STYLE}
                         >
                             {data.map((entry, idx) => (
                                 <Cell
@@ -205,7 +199,7 @@ function BreakdownPieChart({ data, title }: { data: CategoryDataPoint[]; title: 
                             ))}
                         </Pie>
                         <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [`${v}%`, String(name)]} />
-                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
+                        <Legend iconType={LEGEND_ICON_TYPE} iconSize={LEGEND_ICON_SIZE} wrapperStyle={LEGEND_STYLE} />
                     </PieChart>
                 </ResponsiveContainer>
             </Box>
@@ -220,18 +214,18 @@ function DistributionBarChart({ data, title }: { data: CategoryDataPoint[]; titl
             <Box sx={{ width: '100%', height: 300 }} role="img" aria-label={title}>
                 <ResponsiveContainer>
                     <BarChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                        <CartesianGrid strokeDasharray={GRID_DASH} stroke={GRID_STROKE} vertical={false} />
                         <XAxis
                             dataKey="name"
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            axisLine={{ stroke: '#E2E8F0' }}
+                            tick={AXIS_TICK_STYLE}
+                            axisLine={AXIS_LINE_STYLE}
                         />
                         <YAxis
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            axisLine={{ stroke: '#E2E8F0' }}
+                            tick={AXIS_TICK_STYLE}
+                            axisLine={AXIS_LINE_STYLE}
                         />
                         <Tooltip contentStyle={tooltipStyle} formatter={(v) => [Number(v).toLocaleString('fr-FR'), 'Valeur']} />
-                        <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32} animationDuration={900}>
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32} animationDuration={ANIMATION_DURATION}>
                             {data.map((entry, idx) => (
                                 <Cell
                                     key={entry.name}

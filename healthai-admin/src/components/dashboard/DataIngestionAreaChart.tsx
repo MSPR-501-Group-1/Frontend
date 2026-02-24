@@ -3,6 +3,11 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
+import {
+    AXIS_TICK_STYLE, AXIS_LINE_STYLE, GRID_STROKE, GRID_DASH,
+    TOOLTIP_STYLE, ANIMATION_DURATION, LEGEND_STYLE, LEGEND_ICON_SIZE, LEGEND_ICON_TYPE,
+} from '@/lib/chart.constants';
+import { formatShortDate, formatTooltipDate, formatNumber, formatCompact } from '@/lib/formatters';
 import type { MultiSeriesPoint } from '@/types';
 
 const SERIES = [
@@ -44,34 +49,22 @@ export default function DataIngestionAreaChart({
                                 </linearGradient>
                             ))}
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                        <CartesianGrid strokeDasharray={GRID_DASH} stroke={GRID_STROKE} />
                         <XAxis
                             dataKey="date"
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            tickFormatter={(d: string) => {
-                                const date = new Date(d);
-                                return `${date.getDate()}/${date.getMonth() + 1}`;
-                            }}
-                            axisLine={{ stroke: '#E2E8F0' }}
+                            tick={AXIS_TICK_STYLE}
+                            tickFormatter={formatShortDate}
+                            axisLine={AXIS_LINE_STYLE}
                         />
                         <YAxis
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            axisLine={{ stroke: '#E2E8F0' }}
-                            tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
+                            tick={AXIS_TICK_STYLE}
+                            axisLine={AXIS_LINE_STYLE}
+                            tickFormatter={(v: number) => formatCompact(v)}
                         />
                         <Tooltip
-                            contentStyle={{
-                                borderRadius: 8,
-                                border: '1px solid #E2E8F0',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                fontSize: 13,
-                            }}
-                            labelFormatter={(d) =>
-                                new Date(String(d)).toLocaleDateString('fr-FR', {
-                                    weekday: 'short', day: 'numeric', month: 'short',
-                                })
-                            }
-                            formatter={(v) => [Number(v).toLocaleString('fr-FR'), undefined]}
+                            contentStyle={TOOLTIP_STYLE}
+                            labelFormatter={formatTooltipDate}
+                            formatter={(v) => [formatNumber(Number(v)), undefined]}
                         />
                         {SERIES.map((s) => (
                             <Area
@@ -82,13 +75,13 @@ export default function DataIngestionAreaChart({
                                 stroke={s.color}
                                 strokeWidth={1.5}
                                 fill={`url(#grad-${s.key})`}
-                                animationDuration={1200}
+                                animationDuration={ANIMATION_DURATION}
                             />
                         ))}
                         <Legend
-                            iconType="circle"
-                            iconSize={8}
-                            wrapperStyle={{ fontSize: 12 }}
+                            iconType={LEGEND_ICON_TYPE}
+                            iconSize={LEGEND_ICON_SIZE}
+                            wrapperStyle={LEGEND_STYLE}
                         />
                     </AreaChart>
                 </ResponsiveContainer>

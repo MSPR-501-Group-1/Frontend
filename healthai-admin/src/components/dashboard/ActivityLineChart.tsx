@@ -3,6 +3,11 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
+import {
+    AXIS_TICK_STYLE, AXIS_LINE_STYLE, GRID_STROKE, GRID_DASH,
+    TOOLTIP_STYLE, ANIMATION_DURATION, REFERENCE_LINE_COLORS,
+} from '@/lib/chart.constants';
+import { formatShortDate, formatTooltipDate, formatNumber } from '@/lib/formatters';
 import type { TimeSeriesPoint } from '@/types';
 
 interface ActivityLineChartProps {
@@ -45,33 +50,21 @@ export default function ActivityLineChart({
                                 <stop offset="95%" stopColor={color} stopOpacity={0.02} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                        <CartesianGrid strokeDasharray={GRID_DASH} stroke={GRID_STROKE} />
                         <XAxis
                             dataKey="date"
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            tickFormatter={(d: string) => {
-                                const date = new Date(d);
-                                return `${date.getDate()}/${date.getMonth() + 1}`;
-                            }}
-                            axisLine={{ stroke: '#E2E8F0' }}
+                            tick={AXIS_TICK_STYLE}
+                            tickFormatter={formatShortDate}
+                            axisLine={AXIS_LINE_STYLE}
                         />
                         <YAxis
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            axisLine={{ stroke: '#E2E8F0' }}
+                            tick={AXIS_TICK_STYLE}
+                            axisLine={AXIS_LINE_STYLE}
                         />
                         <Tooltip
-                            contentStyle={{
-                                borderRadius: 8,
-                                border: '1px solid #E2E8F0',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                fontSize: 13,
-                            }}
-                            labelFormatter={(d) =>
-                                new Date(String(d)).toLocaleDateString('fr-FR', {
-                                    weekday: 'short', day: 'numeric', month: 'short',
-                                })
-                            }
-                            formatter={(v) => [Number(v).toLocaleString('fr-FR'), 'Valeur']}
+                            contentStyle={TOOLTIP_STYLE}
+                            labelFormatter={formatTooltipDate}
+                            formatter={(v) => [formatNumber(Number(v)), 'Valeur']}
                         />
                         <Area
                             type="monotone"
@@ -81,21 +74,21 @@ export default function ActivityLineChart({
                             fill={`url(#${gradientId})`}
                             dot={false}
                             activeDot={{ r: 5, strokeWidth: 2, fill: '#fff', stroke: color }}
-                            animationDuration={1200}
+                            animationDuration={ANIMATION_DURATION}
                         />
                         {targetValue !== undefined && (
                             <ReferenceLine
                                 y={targetValue}
-                                stroke="#DC2626"
+                                stroke={REFERENCE_LINE_COLORS.target}
                                 strokeDasharray="6 4"
-                                label={{ value: 'Objectif', fill: '#DC2626', fontSize: 11 }}
+                                label={{ value: 'Objectif', fill: REFERENCE_LINE_COLORS.target, fontSize: 11 }}
                             />
                         )}
                         <ReferenceLine
                             y={avg}
-                            stroke="#94A3B8"
+                            stroke={REFERENCE_LINE_COLORS.average}
                             strokeDasharray="3 3"
-                            label={{ value: `Moy. ${avg.toLocaleString('fr-FR')}`, fill: '#94A3B8', fontSize: 11 }}
+                            label={{ value: `Moy. ${formatNumber(avg)}`, fill: REFERENCE_LINE_COLORS.average, fontSize: 11 }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>

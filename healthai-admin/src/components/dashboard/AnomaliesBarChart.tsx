@@ -3,6 +3,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Cell, LabelList,
 } from 'recharts';
+import { AXIS_TICK_STYLE, AXIS_LINE_STYLE, GRID_STROKE, GRID_DASH, TOOLTIP_STYLE, ANIMATION_DURATION } from '@/lib/chart.constants';
 import type { CategoryDataPoint } from '@/types';
 
 interface AnomaliesBarChartProps {
@@ -36,11 +37,11 @@ export default function AnomaliesBarChart({ data, title, subtitle }: AnomaliesBa
                         layout="vertical"
                         margin={{ top: 5, right: 40, bottom: 5, left: 100 }}
                     >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+                        <CartesianGrid strokeDasharray={GRID_DASH} stroke={GRID_STROKE} horizontal={false} />
                         <XAxis
                             type="number"
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            axisLine={{ stroke: '#E2E8F0' }}
+                            tick={AXIS_TICK_STYLE}
+                            axisLine={AXIS_LINE_STYLE}
                         />
                         <YAxis
                             type="category"
@@ -51,19 +52,14 @@ export default function AnomaliesBarChart({ data, title, subtitle }: AnomaliesBa
                             tickLine={false}
                         />
                         <Tooltip
-                            contentStyle={{
-                                borderRadius: 8,
-                                border: '1px solid #E2E8F0',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                fontSize: 13,
-                            }}
+                            contentStyle={TOOLTIP_STYLE}
                             formatter={(v) => [`${v} anomalies`, 'Total']}
                         />
                         <Bar
                             dataKey="value"
                             radius={[0, 6, 6, 0]}
                             barSize={22}
-                            animationDuration={1000}
+                            animationDuration={ANIMATION_DURATION}
                         >
                             <LabelList
                                 dataKey="value"

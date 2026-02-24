@@ -2,6 +2,10 @@ import { Card, Typography, Box } from '@mui/material';
 import {
     PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
+import {
+    TOOLTIP_STYLE, ANIMATION_DURATION, LABEL_LINE_STYLE,
+    LEGEND_STYLE, LEGEND_ICON_SIZE, LEGEND_ICON_TYPE,
+} from '@/lib/chart.constants';
 import type { CategoryDataPoint } from '@/types';
 
 interface SourcesPieChartProps {
@@ -51,12 +55,12 @@ export default function SourcesPieChart({ data, title, subtitle }: SourcesPieCha
                             outerRadius={105}
                             paddingAngle={3}
                             cornerRadius={4}
-                            animationDuration={1000}
+                            animationDuration={ANIMATION_DURATION}
                             animationBegin={200}
                             label={({ name, percent }) =>
                                 `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
                             }
-                            labelLine={{ stroke: '#94A3B8', strokeWidth: 1 }}
+                            labelLine={LABEL_LINE_STYLE}
                         >
                             {data.map((entry, idx) => (
                                 <Cell
@@ -67,21 +71,16 @@ export default function SourcesPieChart({ data, title, subtitle }: SourcesPieCha
                             ))}
                         </Pie>
                         <Tooltip
-                            contentStyle={{
-                                borderRadius: 8,
-                                border: '1px solid #E2E8F0',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                fontSize: 13,
-                            }}
+                            contentStyle={TOOLTIP_STYLE}
                             formatter={(v, name) => [
                                 `${v}%`,
                                 String(name),
                             ]}
                         />
                         <Legend
-                            iconType="circle"
-                            iconSize={8}
-                            wrapperStyle={{ fontSize: 12 }}
+                            iconType={LEGEND_ICON_TYPE}
+                            iconSize={LEGEND_ICON_SIZE}
+                            wrapperStyle={LEGEND_STYLE}
                         />
                     </PieChart>
                 </ResponsiveContainer>

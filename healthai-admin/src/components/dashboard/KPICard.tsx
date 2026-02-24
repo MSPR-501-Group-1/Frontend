@@ -1,5 +1,6 @@
 import { Card, Typography, Box, Chip } from '@mui/material';
 import { TrendingUp, TrendingDown, Remove } from '@mui/icons-material';
+import { STATUS_MUI_COLOR } from '@/lib/status.utils';
 import type { KPIStatus } from '@/types';
 
 interface KPICardProps {
@@ -9,12 +10,6 @@ interface KPICardProps {
     trend?: number;
     status?: KPIStatus;
 }
-
-const STATUS_COLOR: Record<KPIStatus, 'success' | 'warning' | 'error'> = {
-    success: 'success',
-    warning: 'warning',
-    error: 'error',
-};
 
 export default function KPICard({ label, value, unit, trend, status = 'success' }: KPICardProps) {
     const trendIcon =
@@ -38,7 +33,7 @@ export default function KPICard({ label, value, unit, trend, status = 'success' 
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 borderLeft: 4,
-                borderColor: `${STATUS_COLOR[status]}.main`,
+                borderColor: `${STATUS_MUI_COLOR[status]}.main`,
             }}
         >
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

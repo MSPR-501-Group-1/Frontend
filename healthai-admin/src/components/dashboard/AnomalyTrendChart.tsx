@@ -3,6 +3,12 @@ import {
     ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
+import {
+    AXIS_TICK_STYLE, AXIS_LINE_STYLE, GRID_STROKE, GRID_DASH,
+    TOOLTIP_STYLE, ANIMATION_DURATION, ANIMATION_DURATION_SLOW,
+    LEGEND_STYLE, LEGEND_ICON_SIZE, LEGEND_ICON_TYPE,
+} from '@/lib/chart.constants';
+import { formatShortDate } from '@/lib/formatters';
 import type { MultiSeriesPoint } from '@/types';
 
 interface AnomalyTrendChartProps {
@@ -25,20 +31,17 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
             <Box sx={{ width: '100%', height: 320 }} role="img" aria-label={title}>
                 <ResponsiveContainer>
                     <ComposedChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                        <CartesianGrid strokeDasharray={GRID_DASH} stroke={GRID_STROKE} />
                         <XAxis
                             dataKey="date"
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            tickFormatter={(d: string) => {
-                                const date = new Date(d);
-                                return `${date.getDate()}/${date.getMonth() + 1}`;
-                            }}
-                            axisLine={{ stroke: '#E2E8F0' }}
+                            tick={AXIS_TICK_STYLE}
+                            tickFormatter={formatShortDate}
+                            axisLine={AXIS_LINE_STYLE}
                         />
                         <YAxis
                             yAxisId="count"
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            axisLine={{ stroke: '#E2E8F0' }}
+                            tick={AXIS_TICK_STYLE}
+                            axisLine={AXIS_LINE_STYLE}
                             label={{
                                 value: 'Anomalies',
                                 angle: -90,
@@ -50,8 +53,8 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                             yAxisId="rate"
                             orientation="right"
                             domain={[0, 150]}
-                            tick={{ fontSize: 11, fill: '#94A3B8' }}
-                            axisLine={{ stroke: '#E2E8F0' }}
+                            tick={AXIS_TICK_STYLE}
+                            axisLine={AXIS_LINE_STYLE}
                             tickFormatter={(v: number) => `${v}%`}
                             label={{
                                 value: 'Taux résolution',
@@ -61,12 +64,7 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                             }}
                         />
                         <Tooltip
-                            contentStyle={{
-                                borderRadius: 8,
-                                border: '1px solid #E2E8F0',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                fontSize: 13,
-                            }}
+                            contentStyle={TOOLTIP_STYLE}
                             labelFormatter={(d) =>
                                 `Semaine du ${new Date(String(d)).toLocaleDateString('fr-FR', {
                                     day: 'numeric', month: 'short',
@@ -83,7 +81,7 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                             fill="#F87171"
                             radius={[4, 4, 0, 0]}
                             barSize={16}
-                            animationDuration={1000}
+                            animationDuration={ANIMATION_DURATION}
                         />
                         <Bar
                             yAxisId="count"
@@ -91,7 +89,7 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                             fill="#34D399"
                             radius={[4, 4, 0, 0]}
                             barSize={16}
-                            animationDuration={1000}
+                            animationDuration={ANIMATION_DURATION}
                         />
                         <Line
                             yAxisId="rate"
@@ -101,12 +99,12 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                             strokeWidth={2.5}
                             dot={{ r: 3, fill: '#7C3AED', strokeWidth: 0 }}
                             activeDot={{ r: 5, fill: '#fff', stroke: '#7C3AED', strokeWidth: 2 }}
-                            animationDuration={1400}
+                            animationDuration={ANIMATION_DURATION_SLOW}
                         />
                         <Legend
-                            iconType="circle"
-                            iconSize={8}
-                            wrapperStyle={{ fontSize: 12 }}
+                            iconType={LEGEND_ICON_TYPE}
+                            iconSize={LEGEND_ICON_SIZE}
+                            wrapperStyle={LEGEND_STYLE}
                         />
                     </ComposedChart>
                 </ResponsiveContainer>
