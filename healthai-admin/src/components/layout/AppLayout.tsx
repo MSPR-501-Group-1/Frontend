@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
 const DRAWER_WIDTH = 260;
+const COLLAPSED_WIDTH = 64;
 
 export default function AppLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -25,7 +26,12 @@ export default function AppLayout() {
                 Aller au contenu principal
             </a>
 
-            <Sidebar open={sidebarOpen} width={DRAWER_WIDTH} />
+            <Sidebar
+                open={sidebarOpen}
+                width={DRAWER_WIDTH}
+                collapsedWidth={COLLAPSED_WIDTH}
+                onToggle={() => setSidebarOpen((prev) => !prev)}
+            />
 
             <Box
                 sx={{
@@ -33,12 +39,11 @@ export default function AppLayout() {
                     display: 'flex',
                     flexDirection: 'column',
                     minWidth: 0,
+                    transition: 'margin-left 0.25s',
                 }}
             >
                 <Topbar
-                    onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-                    sidebarOpen={sidebarOpen}
-                    drawerWidth={DRAWER_WIDTH}
+                    drawerWidth={sidebarOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH}
                 />
 
                 <Box
