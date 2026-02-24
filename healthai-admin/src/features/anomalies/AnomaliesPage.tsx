@@ -2,149 +2,25 @@ import { useState, useMemo, useCallback } from 'react';
 import {
     Box,
     Typography,
-    CircularProgress,
-    Alert,
     Chip,
     FormControl,
     InputLabel,
     Select,
     MenuItem,
     Paper,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     Button,
-    TextField,
     Stack,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAnomalies, correctAnomaly } from '@/services/anomalies.service';
+import CorrectionDialog from '@/components/anomalies/CorrectionDialog';
+import { LoadingState, ErrorState } from '@/components/feedback';
+import {
+    SEVERITY_CONFIG, STATUS_CONFIG, TYPE_LABELS, SEVERITY_ORDER,
+} from '@/lib/anomalies.constants';
 import type { Anomaly, AnomalySeverity, AnomalyStatus, AnomalyType } from '@/types';
-
-// ─── Lookup maps ────────────────────────────────────────────
-
-const SEVERITY_CONFIG: Record<AnomalySeverity, { label: string; color: 'error' | 'warning' | 'info' | 'success' }> = {
-    critical: { label: 'Critique', color: 'error' },
-    high: { label: 'Élevée', color: 'warning' },
-    medium: { label: 'Moyenne', color: 'info' },
-    low: { label: 'Faible', color: 'success' },
-};
-
-const STATUS_CONFIG: Record<AnomalyStatus, { label: string; color: 'error' | 'warning' | 'info' | 'success' | 'default' }> = {
-    open: { label: 'Ouverte', color: 'error' },
-    in_review: { label: 'En revue', color: 'warning' },
-    corrected: { label: 'Corrigée', color: 'success' },
-    dismissed: { label: 'Écartée', color: 'default' },
-};
-
-const TYPE_LABELS: Record<AnomalyType, string> = {
-    out_of_range: 'Hors plage',
-    duplicate: 'Doublon',
-    missing: 'Manquant',
-    inconsistent: 'Incohérent',
-    format_error: 'Format invalide',
-};
-
-// ─── Correction Dialog ──────────────────────────────────────
-
-interface CorrectionDialogProps {
-    anomaly: Anomaly | null;
-    open: boolean;
-    onClose: () => void;
-    onSubmit: (id: string, correctedValue: string, justification: string) => void;
-    isSubmitting: boolean;
-}
-
-function CorrectionDialog({ anomaly, open, onClose, onSubmit, isSubmitting }: CorrectionDialogProps) {
-    const [correctedValue, setCorrectedValue] = useState('');
-    const [justification, setJustification] = useState('');
-    const [touched, setTouched] = useState(false);
-
-    // Reset form when dialog opens with new anomaly
-    const handleEnter = useCallback(() => {
-        setCorrectedValue(anomaly?.suggestedValue || '');
-        setJustification('');
-        setTouched(false);
-    }, [anomaly]);
-
-    const isValid = correctedValue.trim().length > 0 && justification.trim().length > 0;
-
-    const handleSubmit = () => {
-        setTouched(true);
-        if (!anomaly || !isValid) return;
-        onSubmit(anomaly.id, correctedValue.trim(), justification.trim());
-    };
-
-    return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            TransitionProps={{ onEnter: handleEnter }}
-        >
-            <DialogTitle>Corriger l'anomalie {anomaly?.id}</DialogTitle>
-            <DialogContent dividers>
-                {anomaly && (
-                    <Stack spacing={2.5} sx={{ pt: 1 }}>
-                        {/* Summary */}
-                        <Alert severity="info" variant="outlined">
-                            {anomaly.description}
-                        </Alert>
-
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                            <TextField
-                                label="Valeur originale"
-                                value={anomaly.originalValue}
-                                size="small"
-                                slotProps={{ input: { readOnly: true } }}
-                            />
-                            <TextField
-                                label="Valeur suggérée"
-                                value={anomaly.suggestedValue || '—'}
-                                size="small"
-                                slotProps={{ input: { readOnly: true } }}
-                            />
-                        </Box>
-
-                        <TextField
-                            label="Valeur corrigée"
-                            value={correctedValue}
-                            onChange={(e) => setCorrectedValue(e.target.value)}
-                            error={touched && correctedValue.trim().length === 0}
-                            helperText={touched && correctedValue.trim().length === 0 ? 'Obligatoire' : ''}
-                            required
-                            fullWidth
-                        />
-
-                        <TextField
-                            label="Justification"
-                            value={justification}
-                            onChange={(e) => setJustification(e.target.value)}
-                            error={touched && justification.trim().length === 0}
-                            helperText={touched && justification.trim().length === 0 ? 'Obligatoire — requis pour la traçabilité' : ''}
-                            required
-                            fullWidth
-                            multiline
-                            minRows={2}
-                        />
-                    </Stack>
-                )}
-            </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2 }}>
-                <Button onClick={onClose} disabled={isSubmitting}>
-                    Annuler
-                </Button>
-                <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting || !isValid}>
-                    {isSubmitting ? <CircularProgress size={20} /> : 'Valider la correction'}
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
 
 // ─── Page ───────────────────────────────────────────────────
 
@@ -240,10 +116,8 @@ export default function AnomaliesPage() {
                     const cfg = SEVERITY_CONFIG[value as AnomalySeverity];
                     return <Chip label={cfg.label} color={cfg.color} size="small" sx={{ fontWeight: 600 }} />;
                 },
-                sortComparator: (a: AnomalySeverity, b: AnomalySeverity) => {
-                    const order: AnomalySeverity[] = ['critical', 'high', 'medium', 'low'];
-                    return order.indexOf(a) - order.indexOf(b);
-                },
+                sortComparator: (a: AnomalySeverity, b: AnomalySeverity) =>
+                    SEVERITY_ORDER.indexOf(a) - SEVERITY_ORDER.indexOf(b),
             },
             {
                 field: 'status',
@@ -282,21 +156,8 @@ export default function AnomaliesPage() {
     );
 
     // ── Loading / Error ──
-    if (isLoading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
-
-    if (isError) {
-        return (
-            <Alert severity="error" sx={{ m: 2 }}>
-                Erreur lors du chargement des anomalies.
-            </Alert>
-        );
-    }
+    if (isLoading) return <LoadingState />;
+    if (isError) return <ErrorState message="Erreur lors du chargement des anomalies." />;
 
     return (
         <Box>
