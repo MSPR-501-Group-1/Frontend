@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, Toolbar } from '@mui/material';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
@@ -34,15 +34,22 @@ export default function AppLayout() {
                     flexDirection: 'column',
                     ml: sidebarOpen ? `${DRAWER_WIDTH}px` : 0,
                     transition: 'margin-left 0.3s',
+                    minWidth: 0,
                 }}
             >
-                <Topbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+                <Topbar
+                    onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                    sidebarOpen={sidebarOpen}
+                    drawerWidth={DRAWER_WIDTH}
+                />
 
                 <Box
                     component="main"
                     id="main-content"
                     sx={{ flexGrow: 1, p: 3, bgcolor: 'background.default' }}
                 >
+                    {/* Spacer to push content below the fixed AppBar */}
+                    <Toolbar />
                     <Outlet />
                 </Box>
             </Box>

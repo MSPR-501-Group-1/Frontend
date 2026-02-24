@@ -12,20 +12,25 @@ import { useAuthStore } from '@/stores/auth.store';
 
 interface TopbarProps {
     onToggleSidebar: () => void;
+    sidebarOpen: boolean;
+    drawerWidth: number;
 }
 
-export default function Topbar({ onToggleSidebar }: TopbarProps) {
+export default function Topbar({ onToggleSidebar, sidebarOpen, drawerWidth }: TopbarProps) {
     const { user, logout } = useAuthStore();
 
     return (
         <AppBar
-            position="sticky"
+            position="fixed"
             elevation={0}
             sx={{
                 bgcolor: 'background.paper',
                 color: 'text.primary',
                 borderBottom: '1px solid',
                 borderColor: 'divider',
+                left: sidebarOpen ? `${drawerWidth}px` : 0,
+                width: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : '100%',
+                transition: 'left 0.3s, width 0.3s',
             }}
         >
             <Toolbar>
