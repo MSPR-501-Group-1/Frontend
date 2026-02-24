@@ -1,31 +1,28 @@
 import { Card, Typography, Box } from '@mui/material';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, ReferenceLine,
+    Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import type { TimeSeriesPoint } from '@/types';
+import type { MultiSeriesPoint } from '@/types';
 
-interface ActivityLineChartProps {
-    data: TimeSeriesPoint[];
+const SERIES = [
+    { key: 'Nutrition', color: '#2563EB' },
+    { key: 'Fitness', color: '#7C3AED' },
+    { key: 'Biométrique', color: '#16A34A' },
+    { key: 'Sommeil', color: '#F59E0B' },
+];
+
+interface DataIngestionAreaChartProps {
+    data: MultiSeriesPoint[];
     title: string;
     subtitle?: string;
-    color?: string;
-    showTarget?: boolean;
 }
 
-export default function ActivityLineChart({
+export default function DataIngestionAreaChart({
     data,
     title,
     subtitle,
-    color = '#2563EB',
-    showTarget = true,
-}: ActivityLineChartProps) {
-    const targetValue = showTarget ? data[0]?.target : undefined;
-    const gradientId = `gradient-${color.replace('#', '')}`;
-
-    // Compute avg for reference
-    const avg = Math.round(data.reduce((s, p) => s + p.value, 0) / data.length);
-
+}: DataIngestionAreaChartProps) {
     return (
         <Card sx={{ p: 2.5, height: '100%' }}>
             <Box sx={{ mb: 2 }}>
@@ -36,14 +33,16 @@ export default function ActivityLineChart({
                     </Typography>
                 )}
             </Box>
-            <Box sx={{ width: '100%', height: 300 }} role="img" aria-label={title}>
+            <Box sx={{ width: '100%', height: 320 }} role="img" aria-label={title}>
                 <ResponsiveContainer>
                     <AreaChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                         <defs>
-                            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-                                <stop offset="95%" stopColor={color} stopOpacity={0.02} />
-                            </linearGradient>
+                            {SERIES.map((s) => (
+                                <linearGradient key={s.key} id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor={s.color} stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor={s.color} stopOpacity={0.02} />
+                                </linearGradient>
+                            ))}
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                         <XAxis
@@ -58,6 +57,7 @@ export default function ActivityLineChart({
                         <YAxis
                             tick={{ fontSize: 11, fill: '#94A3B8' }}
                             axisLine={{ stroke: '#E2E8F0' }}
+                            tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
                         />
                         <Tooltip
                             contentStyle={{
@@ -71,31 +71,24 @@ export default function ActivityLineChart({
                                     weekday: 'short', day: 'numeric', month: 'short',
                                 })
                             }
-                            formatter={(v) => [Number(v).toLocaleString('fr-FR'), 'Valeur']}
+                            formatter={(v) => [Number(v).toLocaleString('fr-FR'), undefined]}
                         />
-                        <Area
-                            type="monotone"
-                            dataKey="value"
-                            stroke={color}
-                            strokeWidth={2.5}
-                            fill={`url(#${gradientId})`}
-                            dot={false}
-                            activeDot={{ r: 5, strokeWidth: 2, fill: '#fff', stroke: color }}
-                            animationDuration={1200}
-                        />
-                        {targetValue !== undefined && (
-                            <ReferenceLine
-                                y={targetValue}
-                                stroke="#DC2626"
-                                strokeDasharray="6 4"
-                                label={{ value: 'Objectif', fill: '#DC2626', fontSize: 11 }}
+                        {SERIES.map((s) => (
+                            <Area
+                                key={s.key}
+                                type="monotone"
+                                dataKey={s.key}
+                                stackId="ingestion"
+                                stroke={s.color}
+                                strokeWidth={1.5}
+                                fill={`url(#grad-${s.key})`}
+                                animationDuration={1200}
                             />
-                        )}
-                        <ReferenceLine
-                            y={avg}
-                            stroke="#94A3B8"
-                            strokeDasharray="3 3"
-                            label={{ value: `Moy. ${avg.toLocaleString('fr-FR')}`, fill: '#94A3B8', fontSize: 11 }}
+                        ))}
+                        <Legend
+                            iconType="circle"
+                            iconSize={8}
+                            wrapperStyle={{ fontSize: 12 }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>

@@ -3,10 +3,16 @@ import KPICard from '@/components/dashboard/KPICard';
 import ActivityLineChart from '@/components/dashboard/ActivityLineChart';
 import SourcesPieChart from '@/components/dashboard/SourcesPieChart';
 import AnomaliesBarChart from '@/components/dashboard/AnomaliesBarChart';
+import DataIngestionAreaChart from '@/components/dashboard/DataIngestionAreaChart';
+import AnomalyTrendChart from '@/components/dashboard/AnomalyTrendChart';
 import { dashboardData } from '@/mocks/data';
 
 export default function DashboardPage() {
-    const { kpis, userActivity, dataQualityTrend, dataSources, anomaliesByType } = dashboardData;
+    const {
+        kpis, userActivity, dataQualityTrend,
+        dataSources, anomaliesByType,
+        dataIngestion, anomalyTrend,
+    } = dashboardData;
 
     return (
         <Box>
@@ -33,7 +39,7 @@ export default function DashboardPage() {
                 ))}
             </Grid>
 
-            {/* Charts row 1: Line charts */}
+            {/* Section: Tendances */}
             <Typography variant="h5" sx={{ mb: 2 }}>
                 Tendances
             </Typography>
@@ -41,33 +47,65 @@ export default function DashboardPage() {
                 <Grid size={{ xs: 12, md: 6 }}>
                     <ActivityLineChart
                         data={userActivity}
-                        title="Utilisateurs actifs — 30 derniers jours"
+                        title="Utilisateurs actifs"
+                        subtitle="Évolution sur les 30 derniers jours"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                     <ActivityLineChart
                         data={dataQualityTrend}
-                        title="Score qualité des données — 30 jours"
+                        title="Score qualité données"
+                        subtitle="Progression vers l'objectif de 90%"
                         color="#16A34A"
                     />
                 </Grid>
             </Grid>
 
-            {/* Charts row 2: Pie + Bar */}
+            {/* Section: Volume d'ingestion */}
             <Typography variant="h5" sx={{ mb: 2 }}>
-                Répartition
+                Volume d'ingestion
             </Typography>
-            <Grid container spacing={2}>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid size={{ xs: 12 }}>
+                    <DataIngestionAreaChart
+                        data={dataIngestion}
+                        title="Enregistrements ingérés par source"
+                        subtitle="Stacked area — 30 derniers jours"
+                    />
+                </Grid>
+            </Grid>
+
+            {/* Section: Répartition & Anomalies */}
+            <Typography variant="h5" sx={{ mb: 2 }}>
+                Répartition & Anomalies
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid size={{ xs: 12, md: 6 }}>
                     <SourcesPieChart
                         data={dataSources}
                         title="Sources de données"
+                        subtitle="Répartition par domaine de santé"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                     <AnomaliesBarChart
                         data={anomaliesByType}
                         title="Anomalies par type"
+                        subtitle="Anomalies ouvertes actuellement"
+                    />
+                </Grid>
+            </Grid>
+
+            {/* Section: Suivi des anomalies */}
+            <Typography variant="h5" sx={{ mb: 2 }}>
+                Suivi des anomalies
+            </Typography>
+            <Grid container spacing={2}>
+                <Grid size={{ xs: 12 }}>
+                    <AnomalyTrendChart
+                        data={anomalyTrend}
+                        title="Nouvelles vs Résolues"
+                        subtitle="Évolution hebdomadaire + taux de résolution — 12 dernières semaines"
                     />
                 </Grid>
             </Grid>

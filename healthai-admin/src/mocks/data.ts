@@ -94,4 +94,29 @@ export const dashboardData: DashboardData = {
         { name: 'Format invalide', value: 12, color: '#2563EB' },
         { name: 'Incohérence', value: 8, color: '#16A34A' },
     ],
+
+    // ── Stacked area: data ingestion volume by source (30 days) ──
+    dataIngestion: Array.from({ length: 30 }, (_, i) => {
+        const date = new Date(2026, 1, i + 1);
+        return {
+            date: date.toISOString().slice(0, 10),
+            Nutrition: Math.round(3200 + Math.sin(i / 3) * 800 + Math.random() * 400),
+            Fitness: Math.round(2600 + Math.cos(i / 4) * 600 + Math.random() * 300),
+            Biométrique: Math.round(1800 + Math.sin(i / 5) * 500 + Math.random() * 200),
+            Sommeil: Math.round(900 + Math.cos(i / 6) * 200 + Math.random() * 100),
+        };
+    }),
+
+    // ── Composed: anomalies new vs resolved per week (12 weeks) ──
+    anomalyTrend: Array.from({ length: 12 }, (_, i) => {
+        const date = new Date(2025, 11, 1 + i * 7); // Dec 2025 → Feb 2026
+        const newCount = Math.round(18 - i * 0.8 + (Math.random() - 0.3) * 6);
+        const resolved = Math.round(newCount * (0.7 + i * 0.025) + (Math.random() - 0.5) * 3);
+        return {
+            date: date.toISOString().slice(0, 10),
+            Nouvelles: Math.max(newCount, 2),
+            Résolues: Math.max(resolved, 1),
+            Taux: Math.round((Math.max(resolved, 1) / Math.max(newCount, 2)) * 100),
+        };
+    }),
 };

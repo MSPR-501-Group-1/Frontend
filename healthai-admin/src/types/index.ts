@@ -45,10 +45,17 @@ export interface CategoryDataPoint {
     color?: string;
 }
 
+export interface MultiSeriesPoint {
+    date: string;
+    [key: string]: string | number;  // dynamic series keys
+}
+
 export interface DashboardData {
     kpis: BusinessKPI[];
     userActivity: TimeSeriesPoint[];
     dataQualityTrend: TimeSeriesPoint[];
     dataSources: CategoryDataPoint[];
     anomaliesByType: CategoryDataPoint[];
+    dataIngestion: MultiSeriesPoint[];      // stacked area — ingestion by source
+    anomalyTrend: MultiSeriesPoint[];       // composed — new vs resolved anomalies
 }
