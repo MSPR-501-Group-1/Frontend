@@ -1,18 +1,29 @@
 import { Typography, Box, Grid } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import KPICard from '@/components/dashboard/KPICard';
 import ActivityLineChart from '@/components/dashboard/ActivityLineChart';
 import SourcesPieChart from '@/components/dashboard/SourcesPieChart';
 import AnomaliesBarChart from '@/components/dashboard/AnomaliesBarChart';
 import DataIngestionAreaChart from '@/components/dashboard/DataIngestionAreaChart';
 import AnomalyTrendChart from '@/components/dashboard/AnomalyTrendChart';
-import { dashboardData } from '@/mocks/data';
+import { LoadingState, ErrorState } from '@/components/feedback';
+import { fetchDashboardData } from '@/services/dashboard.service';
 
 export default function DashboardPage() {
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ['dashboard'],
+        queryFn: fetchDashboardData,
+    });
+
+    if (isLoading) return <LoadingState />;
+    if (isError) return <ErrorState message="Erreur lors du chargement du dashboard." />;
+    if (!data) return null;
+
     const {
         kpis, userActivity, dataQualityTrend,
         dataSources, anomaliesByType,
         dataIngestion, anomalyTrend,
-    } = dashboardData;
+    } = data;
 
     return (
         <Box>
