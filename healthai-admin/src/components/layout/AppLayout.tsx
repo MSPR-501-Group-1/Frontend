@@ -32,8 +32,6 @@ export default function AppLayout() {
                     flexGrow: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    ml: sidebarOpen ? `${DRAWER_WIDTH}px` : 0,
-                    transition: 'margin-left 0.3s',
                     minWidth: 0,
                 }}
             >

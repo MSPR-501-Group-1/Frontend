@@ -50,8 +50,6 @@ export default function Sidebar({ open, width }: SidebarProps) {
     const navigate = useNavigate();
     const user = useAuthStore((s) => s.user);
 
-    if (!open) return null;
-
     // Filter nav items based on user role
     const visibleItems = NAV_ITEMS.filter(
         (item) => !item.roles || (user && item.roles.includes(user.role))
@@ -61,13 +59,17 @@ export default function Sidebar({ open, width }: SidebarProps) {
         <Drawer
             variant="permanent"
             sx={{
-                width,
+                width: open ? width : 0,
                 flexShrink: 0,
+                overflow: 'hidden',
+                transition: 'width 0.3s',
                 '& .MuiDrawer-paper': {
-                    width,
+                    width: open ? width : 0,
                     boxSizing: 'border-box',
                     borderRight: '1px solid',
                     borderColor: 'divider',
+                    overflow: 'hidden',
+                    transition: 'width 0.3s',
                 },
             }}
         >
