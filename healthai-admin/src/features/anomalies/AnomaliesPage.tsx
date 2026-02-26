@@ -16,7 +16,8 @@ import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAnomalies, correctAnomaly } from '@/services/anomalies.service';
 import CorrectionDialog from '@/components/anomalies/CorrectionDialog';
-import { LoadingState, ErrorState } from '@/components/feedback';
+import { LoadingState, ErrorState, ExportButton } from '@/components/feedback';
+import type { ExportColumn } from '@/lib/export.utils';
 import {
     SEVERITY_CONFIG, STATUS_CONFIG, TYPE_LABELS, SEVERITY_ORDER,
 } from '@/lib/anomalies.constants';
@@ -25,6 +26,18 @@ import type { Anomaly, AnomalySeverity, AnomalyStatus, AnomalyType } from '@/typ
 // ─── Page ───────────────────────────────────────────────────
 
 type SeverityFilter = 'all' | AnomalySeverity;
+
+/** Column descriptors for CSV/PDF export (decoupled from DataGrid columns). */
+const EXPORT_COLUMNS: ExportColumn[] = [
+    { field: 'id', headerName: 'ID' },
+    { field: 'detectedAt', headerName: 'Détection' },
+    { field: 'source', headerName: 'Source' },
+    { field: 'field', headerName: 'Champ' },
+    { field: 'type', headerName: 'Type' },
+    { field: 'severity', headerName: 'Sévérité' },
+    { field: 'status', headerName: 'Statut' },
+    { field: 'description', headerName: 'Description' },
+];
 
 export default function AnomaliesPage() {
     const queryClient = useQueryClient();
@@ -192,9 +205,15 @@ export default function AnomaliesPage() {
                         <MenuItem value="low">Faible</MenuItem>
                     </Select>
                 </FormControl>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
                     {filteredRows.length} anomalie{filteredRows.length > 1 ? 's' : ''} affichée{filteredRows.length > 1 ? 's' : ''}
                 </Typography>
+                <ExportButton
+                    fileName="anomalies-export"
+                    title="Anomalies"
+                    columns={EXPORT_COLUMNS}
+                    rows={filteredRows as unknown as Record<string, unknown>[]}
+                />
             </Paper>
 
             {/* DataGrid */}

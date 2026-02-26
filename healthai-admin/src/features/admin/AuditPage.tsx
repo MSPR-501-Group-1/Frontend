@@ -14,7 +14,8 @@ import type { SelectChangeEvent } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAuditLogs } from '@/services/audit.service';
-import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
+import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
+import type { ExportColumn } from '@/lib/export.utils';
 import type { AuditLog, AuditAction } from '@/types';
 
 // ─── Action display config ──────────────────────────────────
@@ -35,6 +36,16 @@ const ACTION_CONFIG: Record<AuditAction, { label: string; color: 'success' | 'er
 // ─── Page ───────────────────────────────────────────────────
 
 type ActionFilter = 'all' | AuditAction;
+
+/** Column descriptors for CSV/PDF export. */
+const EXPORT_COLUMNS: ExportColumn[] = [
+    { field: 'id', headerName: 'ID' },
+    { field: 'timestamp', headerName: 'Date' },
+    { field: 'user', headerName: 'Utilisateur' },
+    { field: 'action', headerName: 'Action' },
+    { field: 'detail', headerName: 'Détail' },
+    { field: 'ip', headerName: 'Adresse IP' },
+];
 
 export default function AuditPage() {
     const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
@@ -153,6 +164,13 @@ export default function AuditPage() {
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
                     slotProps={{ inputLabel: { shrink: true } }}
+                />
+                <Box sx={{ flexGrow: 1 }} />
+                <ExportButton
+                    fileName="audit-logs-export"
+                    title="Audit Logs"
+                    columns={EXPORT_COLUMNS}
+                    rows={filteredRows as unknown as Record<string, unknown>[]}
                 />
             </Paper>
 
