@@ -7,15 +7,19 @@ import {
     Avatar,
     Tooltip,
 } from '@mui/material';
-import { Logout } from '@mui/icons-material';
+import { Logout, Menu as MenuIcon } from '@mui/icons-material';
 import { useAuthStore } from '@/stores/auth.store';
 
 interface TopbarProps {
     /** Current sidebar width (full or collapsed) — used to offset the AppBar */
     drawerWidth: number;
+    /** Show the hamburger menu button (mobile) */
+    showMenuButton?: boolean;
+    /** Toggle sidebar callback */
+    onMenuClick?: () => void;
 }
 
-export default function Topbar({ drawerWidth }: TopbarProps) {
+export default function Topbar({ drawerWidth, showMenuButton = false, onMenuClick }: TopbarProps) {
     const { user, logout } = useAuthStore();
 
     return (
@@ -33,6 +37,16 @@ export default function Topbar({ drawerWidth }: TopbarProps) {
             }}
         >
             <Toolbar>
+                {showMenuButton && (
+                    <IconButton
+                        aria-label="Ouvrir le menu"
+                        edge="start"
+                        onClick={onMenuClick}
+                        sx={{ mr: 1 }}
+                    >
+                        <MenuIcon />
+                    </IconButton>
+                )}
                 <Typography variant="h6" sx={{ flexGrow: 1 }} />
 
                 {/* User info */}

@@ -53,6 +53,10 @@ interface SidebarProps {
     width: number;
     collapsedWidth: number;
     onToggle: () => void;
+    /** 'permanent' (desktop) or 'temporary' (mobile overlay) */
+    variant?: 'permanent' | 'temporary';
+    /** Called when the temporary drawer should close (backdrop click) */
+    onClose?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,7 +68,7 @@ function isGroup(item: NavItem): item is NavGroupSection {
 }
 
 
-export default function Sidebar({ open, width, collapsedWidth, onToggle }: SidebarProps) {
+export default function Sidebar({ open, width, collapsedWidth, onToggle, variant = 'permanent', onClose }: SidebarProps) {
     const location = useLocation();
     const navigate = useNavigate();
     const user = useAuthStore((s) => s.user);
@@ -114,15 +118,20 @@ export default function Sidebar({ open, width, collapsedWidth, onToggle }: Sideb
         },
     };
 
+    const isTemporary = variant === 'temporary';
+    const drawerWidth = isTemporary ? width : currentWidth;
+
     return (
         <Drawer
-            variant="permanent"
+            variant={variant}
+            open={isTemporary ? open : undefined}
+            onClose={onClose}
             sx={{
-                width: currentWidth,
+                width: isTemporary ? 0 : currentWidth,
                 flexShrink: 0,
                 transition: 'width 0.25s',
                 '& .MuiDrawer-paper': {
-                    width: currentWidth,
+                    width: drawerWidth,
                     boxSizing: 'border-box',
                     borderRight: '1px solid',
                     borderColor: 'divider',
