@@ -25,6 +25,7 @@ import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPipelineRuns } from '@/services/pipeline.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
+import { useNotificationStore } from '@/stores/notification.store';
 import type { PipelineRun, PipelineStatus } from '@/types';
 import { DataSource } from '@/types';
 
@@ -100,11 +101,12 @@ export default function PipelinePage() {
     }, []);
 
     const handleConfirm = useCallback(() => {
-        // In a real app, this would call a mutation
+        const action = dialogAction === 'approve' ? 'approuvé' : 'rejeté';
+        useNotificationStore.getState().notify(`Pipeline ${action} avec succès`, 'success');
         setDialogOpen(false);
         setSelectedRun(null);
         setJustification('');
-    }, []);
+    }, [dialogAction]);
 
     // ── Columns ──
     const columns: GridColDef<PipelineRun>[] = useMemo(() => [

@@ -22,6 +22,7 @@ import {
     SEVERITY_CONFIG, STATUS_CONFIG, TYPE_LABELS, SEVERITY_ORDER,
 } from '@/lib/anomalies.constants';
 import type { Anomaly, AnomalySeverity, AnomalyStatus, AnomalyType } from '@/types';
+import { useNotificationStore } from '@/stores/notification.store';
 
 // ─── Page ───────────────────────────────────────────────────
 
@@ -58,6 +59,10 @@ export default function AnomaliesPage() {
             queryClient.invalidateQueries({ queryKey: ['anomalies'] });
             setDialogOpen(false);
             setSelectedAnomaly(null);
+            useNotificationStore.getState().notify('Anomalie corrigée avec succès', 'success');
+        },
+        onError: () => {
+            useNotificationStore.getState().notify('Erreur lors de la correction', 'error');
         },
     });
 
