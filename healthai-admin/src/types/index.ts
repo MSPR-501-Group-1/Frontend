@@ -146,3 +146,68 @@ export interface Anomaly {
     correctedAt?: string;
     justification?: string;
 }
+
+// ─── Audit models ───────────────────────────────────────────
+
+export type AuditAction =
+    | 'login'
+    | 'logout'
+    | 'create_user'
+    | 'update_role'
+    | 'correct_anomaly'
+    | 'approve_batch'
+    | 'reject_batch'
+    | 'export_data'
+    | 'update_config'
+    | 'delete_record';
+
+export interface AuditLog {
+    id: string;
+    timestamp: string;          // ISO date
+    user: string;               // email
+    action: AuditAction;
+    target?: string;            // resource affected
+    detail: string;
+    ip: string;
+}
+
+// ─── Pipeline ETL models ────────────────────────────────────
+
+export type PipelineStatus = 'success' | 'failed' | 'running' | 'pending';
+
+export interface PipelineRun {
+    id: string;
+    source: DataSource;
+    startedAt: string;          // ISO date
+    duration: number;           // seconds
+    status: PipelineStatus;
+    recordsProcessed: number;
+    recordsFailed: number;
+    errorMessage?: string;
+    triggeredBy: string;        // 'scheduler' | user email
+}
+
+// ─── Admin User models ──────────────────────────────────────
+
+export type AccountStatus = 'active' | 'inactive' | 'suspended';
+
+export interface AdminUser {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: UserRole;
+    status: AccountStatus;
+    createdAt: string;
+    lastLogin: string | null;
+}
+
+// ─── Business KPI page models ───────────────────────────────
+
+export interface BusinessPageData {
+    kpis: BusinessKPI[];
+    engagementTrend: TimeSeriesPoint[];
+    retentionCohorts: CategoryDataPoint[];
+    featureAdoption: CategoryDataPoint[];
+    revenueVsTarget: MultiSeriesPoint[];
+}
