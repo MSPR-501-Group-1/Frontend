@@ -6,7 +6,7 @@
  */
 
 import { format, subDays, subHours } from 'date-fns';
-import type { AdminUser, AccountStatus } from '@/types';
+import type { AdminUser } from '@/types';
 import { UserRole } from '@/types';
 
 // ─── Seed helpers ───────────────────────────────────────────
