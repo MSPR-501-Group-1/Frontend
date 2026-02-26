@@ -236,7 +236,7 @@ export default function AnomaliesPage() {
                     sx={{
                         border: 'none',
                         '& .MuiDataGrid-columnHeaders': {
-                            bgcolor: 'grey.50',
+                            bgcolor: 'action.hover',
                             fontWeight: 600,
                         },
                         '& .MuiDataGrid-cell': {

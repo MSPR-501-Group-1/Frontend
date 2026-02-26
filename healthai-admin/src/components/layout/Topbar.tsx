@@ -7,8 +7,9 @@ import {
     Avatar,
     Tooltip,
 } from '@mui/material';
-import { Logout, Menu as MenuIcon } from '@mui/icons-material';
+import { Logout, Menu as MenuIcon, DarkMode, LightMode } from '@mui/icons-material';
 import { useAuthStore } from '@/stores/auth.store';
+import { useUIStore } from '@/stores/ui.store';
 
 interface TopbarProps {
     /** Current sidebar width (full or collapsed) — used to offset the AppBar */
@@ -21,6 +22,7 @@ interface TopbarProps {
 
 export default function Topbar({ drawerWidth, showMenuButton = false, onMenuClick }: TopbarProps) {
     const { user, logout } = useAuthStore();
+    const { themeMode, toggleTheme } = useUIStore();
 
     return (
         <AppBar
@@ -51,7 +53,15 @@ export default function Topbar({ drawerWidth, showMenuButton = false, onMenuClic
 
                 {/* User info */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Tooltip title={themeMode === 'light' ? 'Mode sombre' : 'Mode clair'}>
+                        <IconButton
+                            aria-label={themeMode === 'light' ? 'Activer le mode sombre' : 'Activer le mode clair'}
+                            onClick={toggleTheme}
+                        >
+                            {themeMode === 'light' ? <DarkMode fontSize="small" /> : <LightMode fontSize="small" />}
+                        </IconButton>
+                    </Tooltip>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
                         {user?.firstName} {user?.lastName}
                     </Typography>
                     <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>

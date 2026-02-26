@@ -159,7 +159,7 @@ export default function UsersPage() {
                     sx={{
                         border: 'none',
                         '& .MuiDataGrid-columnHeaders': {
-                            bgcolor: 'grey.50',
+                            bgcolor: 'action.hover',
                             fontWeight: 600,
                         },
                         '& .MuiDataGrid-cell': {
