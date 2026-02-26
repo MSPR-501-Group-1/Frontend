@@ -221,6 +221,7 @@ export default function AnomaliesPage() {
                 <DataGrid
                     rows={filteredRows}
                     columns={columns}
+                    aria-label="Tableau des anomalies détectées"
                     initialState={{
                         sorting: { sortModel: [{ field: 'detectedAt', sort: 'desc' }] },
                         pagination: { paginationModel: { pageSize: 10 } },

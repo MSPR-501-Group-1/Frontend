@@ -253,6 +253,7 @@ export default function PipelinePage() {
                 <DataGrid
                     rows={filteredRows}
                     columns={columns}
+                    aria-label="Tableau des exécutions du pipeline ETL"
                     initialState={{
                         sorting: { sortModel: [{ field: 'startedAt', sort: 'desc' }] },
                         pagination: { paginationModel: { pageSize: 10 } },

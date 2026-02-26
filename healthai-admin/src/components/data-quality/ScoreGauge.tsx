@@ -18,7 +18,11 @@ export default function ScoreGauge({ score, size = 160, thickness = 6 }: ScoreGa
     const color = STATUS_HEX[scoreToStatus(score)];
 
     return (
-        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+        <Box
+            sx={{ position: 'relative', display: 'inline-flex' }}
+            role="img"
+            aria-label={`Score de qualité des données : ${score} sur 100`}
+        >
             {/* Background track */}
             <CircularProgress
                 variant="determinate"

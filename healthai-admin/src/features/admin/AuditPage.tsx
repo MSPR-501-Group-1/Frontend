@@ -179,6 +179,7 @@ export default function AuditPage() {
                 <DataGrid
                     rows={filteredRows}
                     columns={columns}
+                    aria-label="Tableau des logs d'audit"
                     initialState={{
                         sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
                         pagination: { paginationModel: { pageSize: 10 } },

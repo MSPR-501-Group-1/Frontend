@@ -149,6 +149,7 @@ export default function UsersPage() {
                 <DataGrid
                     rows={users ?? []}
                     columns={columns}
+                    aria-label="Tableau des utilisateurs"
                     initialState={{
                         sorting: { sortModel: [{ field: 'fullName', sort: 'asc' }] },
                         pagination: { paginationModel: { pageSize: 10 } },

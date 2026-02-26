@@ -13,18 +13,27 @@ export default function AppLayout() {
     return (
         <Box sx={{ display: 'flex', minHeight: '100vh' }}>
             {/* Skip to content link for accessibility */}
-            <a
+            <Box
+                component="a"
                 href="#main-content"
-                style={{
+                sx={{
                     position: 'absolute',
-                    left: -9999,
+                    left: '-9999px',
                     zIndex: 9999,
-                    padding: 8,
-                    background: '#fff',
+                    p: 1,
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    fontWeight: 600,
+                    borderRadius: 1,
+                    textDecoration: 'none',
+                    '&:focus': {
+                        left: 8,
+                        top: 8,
+                    },
                 }}
             >
                 Aller au contenu principal
-            </a>
+            </Box>
 
             <Sidebar
                 open={sidebarOpen}
@@ -49,7 +58,8 @@ export default function AppLayout() {
                 <Box
                     component="main"
                     id="main-content"
-                    sx={{ flexGrow: 1, p: 3, bgcolor: 'background.default' }}
+                    tabIndex={-1}
+                    sx={{ flexGrow: 1, p: 3, bgcolor: 'background.default', outline: 'none' }}
                 >
                     {/* Spacer to push content below the fixed AppBar */}
                     <Toolbar />
