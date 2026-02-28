@@ -11,6 +11,7 @@ import type { User } from '@/types';
 
 interface AuthState {
     user: User | null;
+    token: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<void>;
@@ -21,14 +22,15 @@ export const useAuthStore = create<AuthState>()(
     persist(
         (set) => ({
             user: null,
+            token: null,
             isAuthenticated: false,
             isLoading: false,
 
             login: async (email: string, password: string) => {
                 set({ isLoading: true });
                 try {
-                    const { user } = await loginUser(email, password);
-                    set({ user, isAuthenticated: true, isLoading: false });
+                    const { user, token } = await loginUser(email, password);
+                    set({ user, token, isAuthenticated: true, isLoading: false });
                 } catch (err) {
                     set({ isLoading: false });
                     throw err;
@@ -37,7 +39,7 @@ export const useAuthStore = create<AuthState>()(
 
             logout: () => {
                 logoutUser().catch(() => { /* best-effort server logout */ });
-                set({ user: null, isAuthenticated: false });
+                set({ user: null, token: null, isAuthenticated: false });
             },
         }),
         {
@@ -45,6 +47,7 @@ export const useAuthStore = create<AuthState>()(
             storage: createJSONStorage(() => sessionStorage),
             partialize: (state) => ({
                 user: state.user,
+                token: state.token,
                 isAuthenticated: state.isAuthenticated,
             }),
         }
