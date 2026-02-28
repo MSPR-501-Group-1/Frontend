@@ -10,12 +10,20 @@ import { LoadingState, ErrorState, ExportButton } from '@/components/feedback';
 import type { ExportColumn } from '@/lib/export.utils';
 import { fetchDashboardData } from '@/services/dashboard.service';
 
+// ─── KPI → drill-down route mapping (SRP: config déclarative) ───
+const KPI_DRILLDOWN_ROUTES: Record<string, string> = {
+    'active-users': '/analytics/business',
+    'data-quality': '/data/quality',
+    'anomalies-open': '/data/anomalies',
+    'records-day': '/data/pipeline',
+    'etl-success': '/data/pipeline',
+    'avg-response': '/analytics/business',
+};
+
 export default function DashboardPage() {
     const { data, isLoading, isError } = useQuery({
         queryKey: ['dashboard'],
         queryFn: fetchDashboardData,
-        // Polling toutes les 30s — monitoring quasi temps réel
-        // sans surcharger le backend (compromis fraîcheur / performance)
         refetchInterval: 30_000,
     });
 
@@ -66,6 +74,7 @@ export default function DashboardPage() {
                             unit={kpi.unit}
                             trend={kpi.trend}
                             status={kpi.status}
+                            to={KPI_DRILLDOWN_ROUTES[kpi.id]}
                         />
                     </Grid>
                 ))}

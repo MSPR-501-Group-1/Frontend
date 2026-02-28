@@ -1,5 +1,6 @@
-import { Card, Typography, Box, Chip } from '@mui/material';
+import { Card, CardActionArea, Typography, Box, Chip } from '@mui/material';
 import { TrendingUp, TrendingDown, Remove } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { STATUS_MUI_COLOR } from '@/lib/status.utils';
 import type { KPIStatus } from '@/types';
 
@@ -9,9 +10,12 @@ interface KPICardProps {
     unit?: string;
     trend?: number;
     status?: KPIStatus;
+    to?: string;
 }
 
-export default function KPICard({ label, value, unit, trend, status = 'success' }: KPICardProps) {
+export default function KPICard({ label, value, unit, trend, status = 'success', to }: KPICardProps) {
+    const navigate = useNavigate();
+
     const trendIcon =
         trend === undefined ? null
             : trend > 0 ? <TrendingUp sx={{ fontSize: 16 }} />
@@ -24,18 +28,8 @@ export default function KPICard({ label, value, unit, trend, status = 'success' 
                 : trend < 0 ? 'error'
                     : 'default';
 
-    return (
-        <Card
-            sx={{
-                p: 2.5,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                borderLeft: 4,
-                borderColor: `${STATUS_MUI_COLOR[status]}.main`,
-            }}
-        >
+    const cardContent = (
+        <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 {label}
             </Typography>
@@ -63,6 +57,35 @@ export default function KPICard({ label, value, unit, trend, status = 'success' 
                     />
                 </Box>
             )}
+        </>
+    );
+
+    const cardSx = {
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column' as const,
+        justifyContent: 'space-between',
+        borderLeft: 4,
+        borderColor: `${STATUS_MUI_COLOR[status]}.main`,
+    };
+
+    if (to) {
+        return (
+            <Card sx={cardSx}>
+                <CardActionArea
+                    onClick={() => navigate(to)}
+                    sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between' }}
+                    aria-label={`Voir le détail : ${label}`}
+                >
+                    {cardContent}
+                </CardActionArea>
+            </Card>
+        );
+    }
+
+    return (
+        <Card sx={{ ...cardSx, p: 2.5 }}>
+            {cardContent}
         </Card>
     );
 }
