@@ -72,6 +72,9 @@ export default function PipelinePage() {
     const { data: runs, isLoading, isError } = useQuery({
         queryKey: ['pipeline-runs'],
         queryFn: fetchPipelineRuns,
+        // Polling toutes les 15s — le pipeline nécessite un suivi plus fréquent
+        // que le dashboard pour détecter rapidement les échecs d'ingestion
+        refetchInterval: 15_000,
     });
 
     // ── Filtered data ──

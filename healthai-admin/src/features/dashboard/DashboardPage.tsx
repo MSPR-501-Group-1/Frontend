@@ -14,6 +14,9 @@ export default function DashboardPage() {
     const { data, isLoading, isError } = useQuery({
         queryKey: ['dashboard'],
         queryFn: fetchDashboardData,
+        // Polling toutes les 30s — monitoring quasi temps réel
+        // sans surcharger le backend (compromis fraîcheur / performance)
+        refetchInterval: 30_000,
     });
 
     if (isLoading) return <LoadingState />;
