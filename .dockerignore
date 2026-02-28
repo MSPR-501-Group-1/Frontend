@@ -1,0 +1,30 @@
+# ── Dependencies & build artifacts ───────────────────────────
+node_modules
+**/node_modules
+dist
+**/dist
+
+# ── Version control ──────────────────────────────────────────
+.git
+.gitignore
+
+# ── Documentation (not needed at build time) ─────────────────
+documentation/
+sandbox/
+
+# ── Editor / OS artifacts ────────────────────────────────────
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Environment files ────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Misc ─────────────────────────────────────────────────────
+README.md
+*.md
