@@ -6,6 +6,7 @@ import {
     BarChart, Bar,
 } from 'recharts';
 import KPICard from '@/components/dashboard/KPICard';
+import { PageHeader } from '@/components/feedback';
 import DateRangeSelector from '@/components/analytics/DateRangeSelector';
 import { useDateRange } from '@/hooks/useDateRange';
 import {
@@ -61,16 +62,12 @@ export default function AnalyticsPageLayout({
 
     return (
         <Box>
-            {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-                <Box>
-                    <Typography variant="h4">{title}</Typography>
-                    <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                        {subtitle}
-                    </Typography>
-                </Box>
-                <DateRangeSelector value={range} onChange={setRange} />
-            </Box>
+            {/* Header — uses shared PageHeader for consistency */}
+            <PageHeader
+                title={title}
+                subtitle={subtitle}
+                actions={<DateRangeSelector value={range} onChange={setRange} />}
+            />
 
             {/* KPI Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>

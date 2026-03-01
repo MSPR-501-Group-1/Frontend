@@ -6,7 +6,7 @@ import SourcesPieChart from '@/components/dashboard/SourcesPieChart';
 import AnomaliesBarChart from '@/components/dashboard/AnomaliesBarChart';
 import DataIngestionAreaChart from '@/components/dashboard/DataIngestionAreaChart';
 import AnomalyTrendChart from '@/components/dashboard/AnomalyTrendChart';
-import { LoadingState, ErrorState, ExportButton } from '@/components/feedback';
+import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
 import type { ExportColumn } from '@/lib/export.utils';
 import { fetchDashboardData } from '@/services/dashboard.service';
 
@@ -48,21 +48,19 @@ export default function DashboardPage() {
 
     return (
         <Box>
-            {/* Page title */}
-            <Typography variant="h4" sx={{ mb: 1 }}>
-                Dashboard
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <Typography color="text.secondary" sx={{ flexGrow: 1 }}>
-                    Vue d'ensemble des indicateurs clés — HealthAI Coach
-                </Typography>
-                <ExportButton
-                    fileName="dashboard-kpis"
-                    title="Dashboard — Indicateurs Clés"
-                    columns={kpiExportColumns}
-                    rows={kpis as unknown as Record<string, unknown>[]}
-                />
-            </Box>
+            {/* Page title — uses shared PageHeader for consistency */}
+            <PageHeader
+                title="Dashboard"
+                subtitle="Vue d'ensemble des indicateurs clés — HealthAI Coach"
+                actions={
+                    <ExportButton
+                        fileName="dashboard-kpis"
+                        title="Dashboard — Indicateurs Clés"
+                        columns={kpiExportColumns}
+                        rows={kpis as unknown as Record<string, unknown>[]}
+                    />
+                }
+            />
 
             {/* KPI Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>

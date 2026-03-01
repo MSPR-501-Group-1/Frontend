@@ -13,17 +13,18 @@
 
 import { useState, useMemo } from 'react';
 import {
-    Box, Grid, Chip, Paper, FormControl, InputLabel,
+    Box, Grid, Chip, FormControl, InputLabel,
     Select, MenuItem, Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPartnerDashboard } from '@/services/partners.service';
 import KPICard from '@/components/dashboard/KPICard';
 import PartnerUsageChart from '@/components/partners/PartnerUsageChart';
 import PartnerTypePieChart from '@/components/partners/PartnerTypePieChart';
 import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
+import { DataTable, FilterBar } from '@/components/shared';
 import type { ExportColumn } from '@/lib/export.utils';
 import type { Partner, PartnerType, PartnerStatus, BusinessKPI } from '@/types';
 import { PARTNER_TYPE_LABELS, PARTNER_STATUS_LABELS } from '@/types';
@@ -200,7 +201,7 @@ export default function PartnersPage() {
             </Grid>
 
             {/* Filters */}
-            <Paper elevation={0} sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <FilterBar resultCount={filteredPartners.length} resultLabel="partenaire">
                 <FormControl size="small" sx={{ minWidth: 180 }}>
                     <InputLabel>Type</InputLabel>
                     <Select
@@ -228,37 +229,15 @@ export default function PartnersPage() {
                         ))}
                     </Select>
                 </FormControl>
-
-                <Typography variant="body2" color="text.secondary">
-                    {filteredPartners.length} partenaire{filteredPartners.length > 1 ? 's' : ''} affiché{filteredPartners.length > 1 ? 's' : ''}
-                </Typography>
-            </Paper>
+            </FilterBar>
 
             {/* DataGrid */}
-            <Paper elevation={0} sx={{ height: 480, mb: 3 }}>
-                <DataGrid
-                    rows={filteredPartners}
-                    columns={columns}
-                    aria-label="Tableau des partenaires B2B"
-                    initialState={{
-                        sorting: { sortModel: [{ field: 'apiCallsMonth', sort: 'desc' }] },
-                        pagination: { paginationModel: { pageSize: 10 } },
-                    }}
-                    pageSizeOptions={[10, 25]}
-                    disableRowSelectionOnClick
-                    sx={{
-                        border: 'none',
-                        '& .MuiDataGrid-columnHeaders': {
-                            bgcolor: 'action.hover',
-                            fontWeight: 600,
-                        },
-                        '& .MuiDataGrid-cell': {
-                            display: 'flex',
-                            alignItems: 'center',
-                        },
-                    }}
-                />
-            </Paper>
+            <DataTable
+                rows={filteredPartners}
+                columns={columns}
+                ariaLabel="Tableau des partenaires B2B"
+                defaultSort={{ field: 'apiCallsMonth', sort: 'desc' }}
+            />
 
             {/* Charts */}
             <Typography variant="h5" sx={{ mb: 2 }}>
