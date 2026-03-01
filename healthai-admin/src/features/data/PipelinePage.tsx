@@ -2,8 +2,6 @@ import { useState, useMemo } from 'react';
 import {
     Box,
     Chip,
-    Paper,
-    Stack,
     Typography,
     FormControl,
     InputLabel,
@@ -15,10 +13,11 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import SyncIcon from '@mui/icons-material/Sync';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPipelineRuns } from '@/services/pipeline.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
+import { DataTable, FilterBar, StatsBar } from '@/components/shared';
 import type { PipelineRun, PipelineStatus } from '@/types';
 import { DataSource } from '@/types';
 
@@ -169,15 +168,15 @@ export default function PipelinePage() {
             />
 
             {/* Stats */}
-            <Stack direction="row" spacing={1.5} sx={{ mb: 3 }}>
-                <Chip label={`${stats.total} exécutions`} variant="outlined" />
-                <Chip label={`${stats.success} succès`} color="success" variant="outlined" />
-                <Chip label={`${stats.failed} échoués`} color="error" variant="outlined" />
-                <Chip label={`${stats.running} en cours`} color="info" variant="outlined" />
-            </Stack>
+            <StatsBar stats={[
+                { label: `${stats.total} exécutions` },
+                { label: `${stats.success} succès`, color: 'success' },
+                { label: `${stats.failed} échoués`, color: 'error' },
+                { label: `${stats.running} en cours`, color: 'info' },
+            ]} />
 
             {/* Filter */}
-            <Paper elevation={0} sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <FilterBar resultCount={filteredRows.length} resultLabel="exécution">
                 <FormControl size="small" sx={{ minWidth: 180 }}>
                     <InputLabel>Statut</InputLabel>
                     <Select
@@ -191,36 +190,15 @@ export default function PipelinePage() {
                         ))}
                     </Select>
                 </FormControl>
-                <Typography variant="body2" color="text.secondary">
-                    {filteredRows.length} exécution{filteredRows.length > 1 ? 's' : ''} affichée{filteredRows.length > 1 ? 's' : ''}
-                </Typography>
-            </Paper>
+            </FilterBar>
 
             {/* DataGrid */}
-            <Paper elevation={0} sx={{ height: 560 }}>
-                <DataGrid
-                    rows={filteredRows}
-                    columns={columns}
-                    aria-label="Tableau des exécutions du pipeline ETL"
-                    initialState={{
-                        sorting: { sortModel: [{ field: 'startedAt', sort: 'desc' }] },
-                        pagination: { paginationModel: { pageSize: 10 } },
-                    }}
-                    pageSizeOptions={[10, 25, 50]}
-                    disableRowSelectionOnClick
-                    sx={{
-                        border: 'none',
-                        '& .MuiDataGrid-columnHeaders': {
-                            bgcolor: 'action.hover',
-                            fontWeight: 600,
-                        },
-                        '& .MuiDataGrid-cell': {
-                            display: 'flex',
-                            alignItems: 'center',
-                        },
-                    }}
-                />
-            </Paper>
+            <DataTable
+                rows={filteredRows}
+                columns={columns}
+                ariaLabel="Tableau des exécutions du pipeline ETL"
+                defaultSort={{ field: 'startedAt', sort: 'desc' }}
+            />
 
         </Box>
     );

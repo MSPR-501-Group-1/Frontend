@@ -7,16 +7,15 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Paper,
     Button,
-    Stack,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAnomalies, correctAnomaly } from '@/services/anomalies.service';
 import CorrectionDialog from '@/components/anomalies/CorrectionDialog';
-import { LoadingState, ErrorState, ExportButton } from '@/components/feedback';
+import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
+import { DataTable, FilterBar, StatsBar } from '@/components/shared';
 import type { ExportColumn } from '@/lib/export.utils';
 import {
     SEVERITY_CONFIG, STATUS_CONFIG, TYPE_LABELS, SEVERITY_ORDER,
@@ -179,23 +178,32 @@ export default function AnomaliesPage() {
 
     return (
         <Box>
-            {/* Header */}
-            <Typography variant="h4" gutterBottom>
-                Anomalies
-            </Typography>
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
-                Détection et correction des anomalies de données
-            </Typography>
+            {/* Header — uses shared PageHeader instead of raw Typography */}
+            <PageHeader
+                title="Anomalies"
+                subtitle="Détection et correction des anomalies de données"
+            />
 
             {/* Stats chips */}
-            <Stack direction="row" spacing={1.5} sx={{ mb: 3 }}>
-                <Chip label={`${stats.total} total`} variant="outlined" />
-                <Chip label={`${stats.open} ouvertes`} color="error" variant="outlined" />
-                <Chip label={`${stats.critical} critiques`} color="warning" variant="outlined" />
-            </Stack>
+            <StatsBar stats={[
+                { label: `${stats.total} total` },
+                { label: `${stats.open} ouvertes`, color: 'error' },
+                { label: `${stats.critical} critiques`, color: 'warning' },
+            ]} />
 
             {/* Severity filter */}
-            <Paper elevation={0} sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <FilterBar
+                resultCount={filteredRows.length}
+                resultLabel="anomalie"
+                actions={
+                    <ExportButton
+                        fileName="anomalies-export"
+                        title="Anomalies"
+                        columns={EXPORT_COLUMNS}
+                        rows={filteredRows as unknown as Record<string, unknown>[]}
+                    />
+                }
+            >
                 <FormControl size="small" sx={{ minWidth: 180 }}>
                     <InputLabel>Sévérité</InputLabel>
                     <Select
@@ -210,42 +218,15 @@ export default function AnomaliesPage() {
                         <MenuItem value="low">Faible</MenuItem>
                     </Select>
                 </FormControl>
-                <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
-                    {filteredRows.length} anomalie{filteredRows.length > 1 ? 's' : ''} affichée{filteredRows.length > 1 ? 's' : ''}
-                </Typography>
-                <ExportButton
-                    fileName="anomalies-export"
-                    title="Anomalies"
-                    columns={EXPORT_COLUMNS}
-                    rows={filteredRows as unknown as Record<string, unknown>[]}
-                />
-            </Paper>
+            </FilterBar>
 
             {/* DataGrid */}
-            <Paper elevation={0} sx={{ height: 560 }}>
-                <DataGrid
-                    rows={filteredRows}
-                    columns={columns}
-                    aria-label="Tableau des anomalies détectées"
-                    initialState={{
-                        sorting: { sortModel: [{ field: 'detectedAt', sort: 'desc' }] },
-                        pagination: { paginationModel: { pageSize: 10 } },
-                    }}
-                    pageSizeOptions={[10, 25, 50]}
-                    disableRowSelectionOnClick
-                    sx={{
-                        border: 'none',
-                        '& .MuiDataGrid-columnHeaders': {
-                            bgcolor: 'action.hover',
-                            fontWeight: 600,
-                        },
-                        '& .MuiDataGrid-cell': {
-                            display: 'flex',
-                            alignItems: 'center',
-                        },
-                    }}
-                />
-            </Paper>
+            <DataTable
+                rows={filteredRows}
+                columns={columns}
+                ariaLabel="Tableau des anomalies détectées"
+                defaultSort={{ field: 'detectedAt', sort: 'desc' }}
+            />
 
             {/* Correction Dialog */}
             <CorrectionDialog

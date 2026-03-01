@@ -35,7 +35,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchValidationBatches,
@@ -48,6 +48,7 @@ import {
 } from '@/services/validation.service';
 import KPICard from '@/components/dashboard/KPICard';
 import { LoadingState, ErrorState, PageHeader, ExportButton, EmptyState } from '@/components/feedback';
+import { DataTable, FilterBar } from '@/components/shared';
 import { useNotificationStore } from '@/stores/notification.store';
 import type { ExportColumn } from '@/lib/export.utils';
 import { DataSource, ValidationStatus } from '@/types';
@@ -562,24 +563,13 @@ export default function ValidationPage() {
                 ) : !records?.length ? (
                     <EmptyState message="Aucun enregistrement KO pour ce batch." />
                 ) : (
-                    <Paper elevation={0} sx={{ height: 420, mb: 3 }}>
-                        <DataGrid
-                            rows={records}
-                            columns={recordColumns}
-                            aria-label={`Enregistrements KO du batch ${selectedBatch.id}`}
-                            initialState={{
-                                sorting: { sortModel: [{ field: 'validationStatus', sort: 'asc' }] },
-                                pagination: { paginationModel: { pageSize: 10 } },
-                            }}
-                            pageSizeOptions={[10, 25, 50]}
-                            disableRowSelectionOnClick
-                            sx={{
-                                border: 'none',
-                                '& .MuiDataGrid-columnHeaders': { bgcolor: 'action.hover', fontWeight: 600 },
-                                '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' },
-                            }}
-                        />
-                    </Paper>
+                    <DataTable
+                        rows={records}
+                        columns={recordColumns}
+                        ariaLabel={`Enregistrements KO du batch ${selectedBatch.id}`}
+                        defaultSort={{ field: 'validationStatus', sort: 'asc' }}
+                        height={420}
+                    />
                 )}
 
                 {/* Batch-level actions */}
@@ -731,56 +721,42 @@ export default function ValidationPage() {
                 </Grid>
             )}
 
-            {/* Tabs */}
-            <Tabs
-                value={tabIndex}
-                onChange={(_, v) => setTabIndex(v)}
-                sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
-                aria-label="Filtrer par statut"
-            >
-                {TAB_LABELS.map((label, i) => (
-                    <Tab
-                        key={label}
-                        label={
-                            <Stack direction="row" spacing={0.5} alignItems="center">
-                                <span>{label}</span>
-                                {summary && i > 0 && (
-                                    <Chip
-                                        label={[0, summary.pending, summary.inReview, summary.approved, summary.rejected, summary.corrected][i]}
-                                        size="small"
-                                        sx={{ height: 20, fontSize: 11 }}
-                                    />
-                                )}
-                            </Stack>
-                        }
-                    />
-                ))}
-            </Tabs>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {filteredBatches.length} batch{filteredBatches.length > 1 ? 'es' : ''}
-                {' — Cliquez sur "Ouvrir ko.csv" pour éditer les enregistrements en anomalie'}
-            </Typography>
+            {/* Tabs — harmonized into FilterBar with embedded Tabs */}
+            <FilterBar resultCount={filteredBatches.length} resultLabel="batch">
+                <Tabs
+                    value={tabIndex}
+                    onChange={(_, v) => setTabIndex(v)}
+                    sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5 } }}
+                    aria-label="Filtrer par statut"
+                >
+                    {TAB_LABELS.map((label, i) => (
+                        <Tab
+                            key={label}
+                            label={
+                                <Stack direction="row" spacing={0.5} alignItems="center">
+                                    <span>{label}</span>
+                                    {summary && i > 0 && (
+                                        <Chip
+                                            label={[0, summary.pending, summary.inReview, summary.approved, summary.rejected, summary.corrected][i]}
+                                            size="small"
+                                            sx={{ height: 20, fontSize: 11 }}
+                                        />
+                                    )}
+                                </Stack>
+                            }
+                        />
+                    ))}
+                </Tabs>
+            </FilterBar>
 
             {/* Batch DataGrid */}
-            <Paper elevation={0} sx={{ height: 520 }}>
-                <DataGrid
-                    rows={filteredBatches}
-                    columns={batchColumns}
-                    aria-label="Batches de validation ETL"
-                    initialState={{
-                        sorting: { sortModel: [{ field: 'receivedAt', sort: 'desc' }] },
-                        pagination: { paginationModel: { pageSize: 10 } },
-                    }}
-                    pageSizeOptions={[10, 25, 50]}
-                    disableRowSelectionOnClick
-                    sx={{
-                        border: 'none',
-                        '& .MuiDataGrid-columnHeaders': { bgcolor: 'action.hover', fontWeight: 600 },
-                        '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' },
-                    }}
-                />
-            </Paper>
+            <DataTable
+                rows={filteredBatches}
+                columns={batchColumns}
+                ariaLabel="Batches de validation ETL"
+                defaultSort={{ field: 'receivedAt', sort: 'desc' }}
+                height={520}
+            />
         </Box>
     );
 }

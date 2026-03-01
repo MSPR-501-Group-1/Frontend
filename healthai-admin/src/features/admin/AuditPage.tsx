@@ -6,15 +6,14 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Paper,
-    Stack,
     TextField,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAuditLogs } from '@/services/audit.service';
 import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
+import { DataTable, FilterBar, StatsBar } from '@/components/shared';
 import type { ExportColumn } from '@/lib/export.utils';
 import type { AuditLog, AuditAction } from '@/types';
 
@@ -129,13 +128,24 @@ export default function AuditPage() {
             />
 
             {/* Stats */}
-            <Stack direction="row" spacing={1.5} sx={{ mb: 3 }}>
-                <Chip label={`${logs?.length ?? 0} entrées totales`} variant="outlined" />
-                <Chip label={`${filteredRows.length} affichées`} color="primary" variant="outlined" />
-            </Stack>
+            <StatsBar stats={[
+                { label: `${logs?.length ?? 0} entrées totales` },
+                { label: `${filteredRows.length} affichées`, color: 'primary' },
+            ]} />
 
             {/* Filters */}
-            <Paper elevation={0} sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <FilterBar
+                resultCount={filteredRows.length}
+                resultLabel="entrée"
+                actions={
+                    <ExportButton
+                        fileName="audit-logs-export"
+                        title="Audit Logs"
+                        columns={EXPORT_COLUMNS}
+                        rows={filteredRows as unknown as Record<string, unknown>[]}
+                    />
+                }
+            >
                 <FormControl size="small" sx={{ minWidth: 200 }}>
                     <InputLabel>Type d'action</InputLabel>
                     <Select
@@ -165,40 +175,15 @@ export default function AuditPage() {
                     onChange={(e) => setDateTo(e.target.value)}
                     slotProps={{ inputLabel: { shrink: true } }}
                 />
-                <Box sx={{ flexGrow: 1 }} />
-                <ExportButton
-                    fileName="audit-logs-export"
-                    title="Audit Logs"
-                    columns={EXPORT_COLUMNS}
-                    rows={filteredRows as unknown as Record<string, unknown>[]}
-                />
-            </Paper>
+            </FilterBar>
 
             {/* DataGrid */}
-            <Paper elevation={0} sx={{ height: 560 }}>
-                <DataGrid
-                    rows={filteredRows}
-                    columns={columns}
-                    aria-label="Tableau des logs d'audit"
-                    initialState={{
-                        sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                        pagination: { paginationModel: { pageSize: 10 } },
-                    }}
-                    pageSizeOptions={[10, 25, 50]}
-                    disableRowSelectionOnClick
-                    sx={{
-                        border: 'none',
-                        '& .MuiDataGrid-columnHeaders': {
-                            bgcolor: 'action.hover',
-                            fontWeight: 600,
-                        },
-                        '& .MuiDataGrid-cell': {
-                            display: 'flex',
-                            alignItems: 'center',
-                        },
-                    }}
-                />
-            </Paper>
+            <DataTable
+                rows={filteredRows}
+                columns={columns}
+                ariaLabel="Tableau des logs d'audit"
+                defaultSort={{ field: 'timestamp', sort: 'desc' }}
+            />
         </Box>
     );
 }
