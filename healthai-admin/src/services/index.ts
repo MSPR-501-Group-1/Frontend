@@ -13,3 +13,4 @@ export { fetchUsers } from './users.service';
 export { fetchPipelineRuns } from './pipeline.service';
 export { fetchBusinessData } from './business.service';
 export { fetchPartners, fetchPartnerDashboard } from './partners.service';
+export { fetchSystemConfig, updateValidationRule, toggleAlertThreshold, updateSystemParams } from './config.service';
