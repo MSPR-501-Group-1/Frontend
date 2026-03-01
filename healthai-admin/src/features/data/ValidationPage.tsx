@@ -21,7 +21,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import {
-    Box, Chip, Paper, Stack, Button,
+    Box, Grid, Chip, Paper, Stack, Button, Tabs, Tab,
     Dialog, DialogTitle, DialogContent, DialogActions,
     TextField, Typography, Tooltip, Divider, Alert,
     IconButton,
@@ -35,10 +35,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import type { GridColDef } from '@mui/x-data-grid';
-import { DataTable, KPIGrid, FilterBar } from '@/components/shared';
-import { formatDateTime, formatNumber } from '@/lib/formatters';
-import { SOURCE_LABELS } from '@/lib/labels.constants';
+import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchValidationBatches,
@@ -49,6 +46,7 @@ import {
     updateRecord,
     dismissRecord,
 } from '@/services/validation.service';
+import KPICard from '@/components/dashboard/KPICard';
 import { LoadingState, ErrorState, PageHeader, ExportButton, EmptyState } from '@/components/feedback';
 import { useNotificationStore } from '@/stores/notification.store';
 import type { ExportColumn } from '@/lib/export.utils';
@@ -77,7 +75,13 @@ const RECORD_STATUS_MAP: Record<ValidationRecord['validationStatus'], {
     dismissed: { label: 'Ignoré', color: 'default' },
 };
 
-
+const SOURCE_LABELS: Record<DataSource, string> = {
+    [DataSource.NUTRITION]: 'Nutrition',
+    [DataSource.EXERCISES]: 'Exercices',
+    [DataSource.USER_PROFILES]: 'Profils utilisateur',
+    [DataSource.FITNESS_TRACKER]: 'Fitness Tracker',
+    [DataSource.BIOMETRIC]: 'Biométrique',
+};
 
 // ─── Export columns ─────────────────────────────────────────
 
@@ -106,16 +110,17 @@ const BATCHES_KEY = ['validation-batches'] as const;
 const SUMMARY_KEY = ['validation-summary'] as const;
 const batchRecordsKey = (id: string) => ['validation-records', id] as const;
 
-// ─── Statut filter options ─────────────────────────────────────
+// ─── Tabs ───────────────────────────────────────────────────
 
-const STATUS_OPTIONS = [
-    { value: 'all', label: 'Tous les statuts' },
-    { value: ValidationStatus.PENDING, label: 'En attente' },
-    { value: ValidationStatus.IN_REVIEW, label: 'En revue' },
-    { value: ValidationStatus.APPROVED, label: 'Approuvés' },
-    { value: ValidationStatus.REJECTED, label: 'Rejetés' },
-    { value: ValidationStatus.CORRECTED, label: 'Corrigés' },
+const TAB_FILTERS: (ValidationStatus | 'all')[] = [
+    'all',
+    ValidationStatus.PENDING,
+    ValidationStatus.IN_REVIEW,
+    ValidationStatus.APPROVED,
+    ValidationStatus.REJECTED,
+    ValidationStatus.CORRECTED,
 ];
+const TAB_LABELS = ['Tous', 'En attente', 'En revue', 'Approuvés', 'Rejetés', 'Corrigés'];
 
 // ─── Inline edit state for a single record ──────────────────
 
@@ -131,7 +136,7 @@ export default function ValidationPage() {
     const { notify } = useNotificationStore();
 
     // Master list state
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [tabIndex, setTabIndex] = useState(0);
     const [selectedBatch, setSelectedBatch] = useState<ValidationBatch | null>(null);
 
     // Batch action dialog state
@@ -165,8 +170,9 @@ export default function ValidationPage() {
     // ── Filtered batches ──
     const filteredBatches = useMemo(() => {
         if (!batches) return [];
-        return statusFilter === 'all' ? batches : batches.filter((b) => b.status === statusFilter);
-    }, [batches, statusFilter]);
+        const filter = TAB_FILTERS[tabIndex];
+        return filter === 'all' ? batches : batches.filter((b) => b.status === filter);
+    }, [batches, tabIndex]);
 
     // ── Record stats for detail panel ──
     const recordStats = useMemo(() => {
@@ -275,7 +281,11 @@ export default function ValidationPage() {
             field: 'receivedAt',
             headerName: 'Réception',
             width: 150,
-            valueFormatter: (v: string) => formatDateTime(v),
+            valueFormatter: (v: string) =>
+                new Date(v).toLocaleString('fr-FR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit',
+                }),
         },
         { field: 'okRecordCount', headerName: 'Records OK', width: 110, type: 'number' },
         {
@@ -285,7 +295,7 @@ export default function ValidationPage() {
             type: 'number',
             renderCell: ({ value }) => (
                 <Typography variant="body2" color="error" fontWeight={600}>
-                    {formatNumber(value as number)}
+                    {(value as number).toLocaleString('fr-FR')}
                 </Typography>
             ),
         },
@@ -504,10 +514,10 @@ export default function ValidationPage() {
                     <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap" useFlexGap>
                         <Chip icon={statusCfg.icon} label={statusCfg.label} color={statusCfg.color} />
                         <Typography variant="body2">
-                            <strong>{formatNumber(selectedBatch.okRecordCount)}</strong> records OK
+                            <strong>{selectedBatch.okRecordCount.toLocaleString('fr-FR')}</strong> records OK
                             {' · '}
                             <Typography component="span" color="error.main" fontWeight={600} variant="body2">
-                                {formatNumber(selectedBatch.koRecordCount)}
+                                {selectedBatch.koRecordCount.toLocaleString('fr-FR')}
                             </Typography> records KO
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: 12 }}>
@@ -522,16 +532,20 @@ export default function ValidationPage() {
                 </Paper>
 
                 {/* Record stats */}
-                <KPIGrid
-                    items={[
-                        { id: 'flagged', label: 'Flaggés', value: recordStats.flagged, status: recordStats.flagged > 0 ? 'error' : 'success' },
-                        { id: 'corrected', label: 'Corrigés', value: recordStats.corrected, status: 'success' },
-                        { id: 'dismissed', label: 'Ignorés', value: recordStats.dismissed, status: 'warning' },
-                        { id: 'total', label: 'Total records', value: recordStats.total, status: 'success' },
-                    ]}
-                    columns={{ xs: 6, sm: 3 }}
-                    mb={2}
-                />
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <KPICard label="Flaggés" value={recordStats.flagged} status={recordStats.flagged > 0 ? 'error' : 'success'} />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <KPICard label="Corrigés" value={recordStats.corrected} status="success" />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <KPICard label="Ignorés" value={recordStats.dismissed} status="warning" />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <KPICard label="Total records" value={recordStats.total} status="success" />
+                    </Grid>
+                </Grid>
 
                 {batchEditable && recordStats.flagged > 0 && (
                     <Alert severity="info" sx={{ mb: 2 }}>
@@ -548,15 +562,24 @@ export default function ValidationPage() {
                 ) : !records?.length ? (
                     <EmptyState message="Aucun enregistrement KO pour ce batch." />
                 ) : (
-                    <Box sx={{ mb: 3 }}>
-                        <DataTable
+                    <Paper elevation={0} sx={{ height: 420, mb: 3 }}>
+                        <DataGrid
                             rows={records}
                             columns={recordColumns}
-                            ariaLabel={`Enregistrements KO du batch ${selectedBatch.id}`}
-                            defaultSort={{ field: 'validationStatus', sort: 'asc' }}
-                            height={420}
+                            aria-label={`Enregistrements KO du batch ${selectedBatch.id}`}
+                            initialState={{
+                                sorting: { sortModel: [{ field: 'validationStatus', sort: 'asc' }] },
+                                pagination: { paginationModel: { pageSize: 10 } },
+                            }}
+                            pageSizeOptions={[10, 25, 50]}
+                            disableRowSelectionOnClick
+                            sx={{
+                                border: 'none',
+                                '& .MuiDataGrid-columnHeaders': { bgcolor: 'action.hover', fontWeight: 600 },
+                                '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' },
+                            }}
                         />
-                    </Box>
+                    </Paper>
                 )}
 
                 {/* Batch-level actions */}
@@ -616,7 +639,7 @@ export default function ValidationPage() {
 
                             {dialogAction === 'approve' ? (
                                 <Typography variant="body2">
-                                    En approuvant, les <strong>{formatNumber(selectedBatch.okRecordCount)}</strong> enregistrements
+                                    En approuvant, les <strong>{selectedBatch.okRecordCount.toLocaleString('fr-FR')}</strong> enregistrements
                                     valides seront insérés en base. Les <strong>{recordStats.corrected}</strong> corrections
                                     seront appliquées au fichier corrigé.
                                 </Typography>
@@ -686,38 +709,78 @@ export default function ValidationPage() {
 
             {/* KPI Summary */}
             {summary && (
-                <KPIGrid
-                    items={[
-                        { id: 'pending', label: 'En attente', value: summary.pending, status: summary.pending > 0 ? 'warning' : 'success' },
-                        { id: 'in-review', label: 'En revue', value: summary.inReview, status: 'warning' },
-                        { id: 'approved', label: 'Approuvés', value: summary.approved, status: 'success' },
-                        { id: 'rejected', label: 'Rejetés', value: summary.rejected, status: 'error' },
-                        { id: 'corrected', label: 'Corrigés', value: summary.corrected, status: 'success' },
-                        { id: 'total', label: 'Total', value: summary.total, status: 'success' },
-                    ]}
-                    columns={{ xs: 6, sm: 4, md: 2 }}
-                />
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                        <KPICard label="En attente" value={summary.pending} status={summary.pending > 0 ? 'warning' : 'success'} />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                        <KPICard label="En revue" value={summary.inReview} status="warning" />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                        <KPICard label="Approuvés" value={summary.approved} status="success" />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                        <KPICard label="Rejetés" value={summary.rejected} status="error" />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                        <KPICard label="Corrigés" value={summary.corrected} status="success" />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                        <KPICard label="Total" value={summary.total} status="success" />
+                    </Grid>
+                </Grid>
             )}
 
-            <FilterBar
-                filters={[{
-                    label: 'Statut',
-                    value: statusFilter,
-                    onChange: setStatusFilter,
-                    options: STATUS_OPTIONS,
-                }]}
-                resultCount={filteredBatches.length}
-                resultLabel="batch"
-            />
+            {/* Tabs */}
+            <Tabs
+                value={tabIndex}
+                onChange={(_, v) => setTabIndex(v)}
+                sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+                aria-label="Filtrer par statut"
+            >
+                {TAB_LABELS.map((label, i) => (
+                    <Tab
+                        key={label}
+                        label={
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                                <span>{label}</span>
+                                {summary && i > 0 && (
+                                    <Chip
+                                        label={[0, summary.pending, summary.inReview, summary.approved, summary.rejected, summary.corrected][i]}
+                                        size="small"
+                                        sx={{ height: 20, fontSize: 11 }}
+                                    />
+                                )}
+                            </Stack>
+                        }
+                    />
+                ))}
+            </Tabs>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                {filteredBatches.length} batch{filteredBatches.length > 1 ? 'es' : ''}
+                {' — Cliquez sur "Ouvrir ko.csv" pour éditer les enregistrements en anomalie'}
+            </Typography>
 
             {/* Batch DataGrid */}
-            <DataTable
-                rows={filteredBatches}
-                columns={batchColumns}
-                ariaLabel="Batches de validation ETL"
-                defaultSort={{ field: 'receivedAt', sort: 'desc' }}
-                height={520}
-            />
+            <Paper elevation={0} sx={{ height: 520 }}>
+                <DataGrid
+                    rows={filteredBatches}
+                    columns={batchColumns}
+                    aria-label="Batches de validation ETL"
+                    initialState={{
+                        sorting: { sortModel: [{ field: 'receivedAt', sort: 'desc' }] },
+                        pagination: { paginationModel: { pageSize: 10 } },
+                    }}
+                    pageSizeOptions={[10, 25, 50]}
+                    disableRowSelectionOnClick
+                    sx={{
+                        border: 'none',
+                        '& .MuiDataGrid-columnHeaders': { bgcolor: 'action.hover', fontWeight: 600 },
+                        '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' },
+                    }}
+                />
+            </Paper>
         </Box>
     );
 }

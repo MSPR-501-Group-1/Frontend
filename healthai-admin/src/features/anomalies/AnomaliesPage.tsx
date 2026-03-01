@@ -1,21 +1,34 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Box, Chip, Typography, Button } from '@mui/material';
-import type { GridColDef } from '@mui/x-data-grid';
+import {
+    Box,
+    Typography,
+    Chip,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Paper,
+    Button,
+    Stack,
+} from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
+import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAnomalies, correctAnomaly } from '@/services/anomalies.service';
 import CorrectionDialog from '@/components/anomalies/CorrectionDialog';
-import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
-import { DataTable, FilterBar, StatsBar } from '@/components/shared';
+import { LoadingState, ErrorState, ExportButton } from '@/components/feedback';
 import type { ExportColumn } from '@/lib/export.utils';
-import { formatDate } from '@/lib/formatters';
 import {
     SEVERITY_CONFIG, STATUS_CONFIG, TYPE_LABELS, SEVERITY_ORDER,
 } from '@/lib/anomalies.constants';
 import type { Anomaly, AnomalySeverity, AnomalyStatus, AnomalyType } from '@/types';
 import { useNotificationStore } from '@/stores/notification.store';
 
-// ─── Constants ──────────────────────────────────────────────
+// ─── Page ───────────────────────────────────────────────────
 
+type SeverityFilter = 'all' | AnomalySeverity;
+
+/** Column descriptors for CSV/PDF export (decoupled from DataGrid columns). */
 const EXPORT_COLUMNS: ExportColumn[] = [
     { field: 'id', headerName: 'ID' },
     { field: 'detectedAt', headerName: 'Détection' },
@@ -27,20 +40,9 @@ const EXPORT_COLUMNS: ExportColumn[] = [
     { field: 'description', headerName: 'Description' },
 ];
 
-const SEVERITY_OPTIONS = [
-    { value: 'all', label: 'Toutes' },
-    { value: 'critical', label: 'Critique' },
-    { value: 'high', label: 'Élevée' },
-    { value: 'medium', label: 'Moyenne' },
-    { value: 'low', label: 'Faible' },
-];
-
-// ─── Page ───────────────────────────────────────────────────
-
 export default function AnomaliesPage() {
     const queryClient = useQueryClient();
-    const { notify } = useNotificationStore();
-    const [severityFilter, setSeverityFilter] = useState('all');
+    const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('all');
     const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -57,10 +59,10 @@ export default function AnomaliesPage() {
             queryClient.invalidateQueries({ queryKey: ['anomalies'] });
             setDialogOpen(false);
             setSelectedAnomaly(null);
-            notify('Anomalie corrigée avec succès', 'success');
+            useNotificationStore.getState().notify('Anomalie corrigée avec succès', 'success');
         },
         onError: () => {
-            notify('Erreur lors de la correction', 'error');
+            useNotificationStore.getState().notify('Erreur lors de la correction', 'error');
         },
     });
 
@@ -111,7 +113,10 @@ export default function AnomaliesPage() {
                 field: 'detectedAt',
                 headerName: 'Détection',
                 width: 150,
-                valueFormatter: (value: string) => formatDate(value),
+                valueFormatter: (value: string) => {
+                    const d = new Date(value);
+                    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                },
             },
             { field: 'source', headerName: 'Source', width: 150 },
             { field: 'field', headerName: 'Champ', width: 120 },
@@ -141,7 +146,12 @@ export default function AnomaliesPage() {
                     return <Chip label={cfg.label} color={cfg.color} size="small" variant="outlined" />;
                 },
             },
-            { field: 'description', headerName: 'Description', flex: 1, minWidth: 200 },
+            {
+                field: 'description',
+                headerName: 'Description',
+                flex: 1,
+                minWidth: 200,
+            },
             {
                 field: 'actions',
                 headerName: 'Action',
@@ -150,7 +160,11 @@ export default function AnomaliesPage() {
                 filterable: false,
                 renderCell: ({ row }) =>
                     row.status === 'open' || row.status === 'in_review' ? (
-                        <Button size="small" variant="outlined" onClick={() => handleOpenCorrection(row)}>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => handleOpenCorrection(row)}
+                        >
                             Corriger
                         </Button>
                     ) : null,
@@ -165,43 +179,75 @@ export default function AnomaliesPage() {
 
     return (
         <Box>
-            <PageHeader
-                title="Anomalies"
-                subtitle="Détection et correction des anomalies de données"
-            />
+            {/* Header */}
+            <Typography variant="h4" gutterBottom>
+                Anomalies
+            </Typography>
+            <Typography color="text.secondary" sx={{ mb: 3 }}>
+                Détection et correction des anomalies de données
+            </Typography>
 
-            <StatsBar items={[
-                { label: `${stats.total} total` },
-                { label: `${stats.open} ouvertes`, color: 'error' },
-                { label: `${stats.critical} critiques`, color: 'warning' },
-            ]} />
+            {/* Stats chips */}
+            <Stack direction="row" spacing={1.5} sx={{ mb: 3 }}>
+                <Chip label={`${stats.total} total`} variant="outlined" />
+                <Chip label={`${stats.open} ouvertes`} color="error" variant="outlined" />
+                <Chip label={`${stats.critical} critiques`} color="warning" variant="outlined" />
+            </Stack>
 
-            <FilterBar
-                filters={[{
-                    label: 'Sévérité',
-                    value: severityFilter,
-                    onChange: setSeverityFilter,
-                    options: SEVERITY_OPTIONS,
-                }]}
-                resultCount={filteredRows.length}
-                resultLabel="anomalie"
-                actions={
-                    <ExportButton
-                        fileName="anomalies-export"
-                        title="Anomalies"
-                        columns={EXPORT_COLUMNS}
-                        rows={filteredRows as unknown as Record<string, unknown>[]}
-                    />
-                }
-            />
+            {/* Severity filter */}
+            <Paper elevation={0} sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Sévérité</InputLabel>
+                    <Select
+                        value={severityFilter}
+                        label="Sévérité"
+                        onChange={(e: SelectChangeEvent) => setSeverityFilter(e.target.value as SeverityFilter)}
+                    >
+                        <MenuItem value="all">Toutes</MenuItem>
+                        <MenuItem value="critical">Critique</MenuItem>
+                        <MenuItem value="high">Élevée</MenuItem>
+                        <MenuItem value="medium">Moyenne</MenuItem>
+                        <MenuItem value="low">Faible</MenuItem>
+                    </Select>
+                </FormControl>
+                <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+                    {filteredRows.length} anomalie{filteredRows.length > 1 ? 's' : ''} affichée{filteredRows.length > 1 ? 's' : ''}
+                </Typography>
+                <ExportButton
+                    fileName="anomalies-export"
+                    title="Anomalies"
+                    columns={EXPORT_COLUMNS}
+                    rows={filteredRows as unknown as Record<string, unknown>[]}
+                />
+            </Paper>
 
-            <DataTable
-                rows={filteredRows}
-                columns={columns}
-                ariaLabel="Tableau des anomalies détectées"
-                defaultSort={{ field: 'detectedAt', sort: 'desc' }}
-            />
+            {/* DataGrid */}
+            <Paper elevation={0} sx={{ height: 560 }}>
+                <DataGrid
+                    rows={filteredRows}
+                    columns={columns}
+                    aria-label="Tableau des anomalies détectées"
+                    initialState={{
+                        sorting: { sortModel: [{ field: 'detectedAt', sort: 'desc' }] },
+                        pagination: { paginationModel: { pageSize: 10 } },
+                    }}
+                    pageSizeOptions={[10, 25, 50]}
+                    disableRowSelectionOnClick
+                    sx={{
+                        border: 'none',
+                        '& .MuiDataGrid-columnHeaders': {
+                            bgcolor: 'action.hover',
+                            fontWeight: 600,
+                        },
+                        '& .MuiDataGrid-cell': {
+                            display: 'flex',
+                            alignItems: 'center',
+                        },
+                    }}
+                />
+            </Paper>
 
+            {/* Correction Dialog */}
             <CorrectionDialog
                 anomaly={selectedAnomaly}
                 open={dialogOpen}

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Box, Typography, Paper, Chip, Grid } from '@mui/material';
+import { Box, Typography, Paper, Chip } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -67,58 +67,67 @@ export default function DataQualityPage() {
             <PageHeader title="Qualité des données" subtitle="Indice de qualité global (DQI) et scores par dimension" />
 
             {/* Top section : gauge + history */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid size={{ xs: 12, md: 'auto' }}>
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            p: 4,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 1.5,
-                            height: '100%',
-                        }}
-                    >
-                        <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                            Score global DQI
-                        </Typography>
-                        <ScoreGauge score={data.overall} />
-                        <Chip
-                            label={scoreToLabel(data.overall)}
-                            size="small"
-                            color={STATUS_MUI_COLOR[scoreToStatus(data.overall)]}
-                            sx={{ fontWeight: 600 }}
-                        />
-                    </Paper>
-                </Grid>
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: 'auto 1fr' },
+                    gap: 3,
+                    mb: 4,
+                }}
+            >
+                {/* Gauge */}
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: 4,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 1.5,
+                    }}
+                >
+                    <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
+                        Score global DQI
+                    </Typography>
+                    <ScoreGauge score={data.overall} />
+                    <Chip
+                        label={scoreToLabel(data.overall)}
+                        size="small"
+                        color={STATUS_MUI_COLOR[scoreToStatus(data.overall)]}
+                        sx={{ fontWeight: 600 }}
+                    />
+                </Paper>
 
-                <Grid size={{ xs: 12, md: 'grow' }}>
-                    <Paper elevation={0} sx={{ p: 3, height: '100%' }}>
-                        <Typography variant="subtitle2" color="text.secondary" fontWeight={600} gutterBottom>
-                            Évolution sur 30 jours
-                        </Typography>
-                        <HistoryChart data={data.history} />
-                    </Paper>
-                </Grid>
-            </Grid>
+                {/* History chart */}
+                <Paper elevation={0} sx={{ p: 3 }}>
+                    <Typography variant="subtitle2" color="text.secondary" fontWeight={600} gutterBottom>
+                        Évolution sur 30 jours
+                    </Typography>
+                    <HistoryChart data={data.history} />
+                </Paper>
+            </Box>
 
             {/* Dimensions grid */}
             <Typography variant="h6" gutterBottom>
                 Scores par dimension
             </Typography>
-            <Grid container spacing={2}>
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: 'repeat(3, 1fr)' },
+                    gap: 2,
+                }}
+            >
                 {data.dimensions.map((dim) => (
-                    <Grid key={dim.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-                        <DimensionCard
-                            label={dim.label}
-                            score={dim.score}
-                            description={dim.description}
-                            status={dim.status}
-                        />
-                    </Grid>
+                    <DimensionCard
+                        key={dim.id}
+                        label={dim.label}
+                        score={dim.score}
+                        description={dim.description}
+                        status={dim.status}
+                    />
                 ))}
-            </Grid>
+            </Box>
         </Box>
     );
 }

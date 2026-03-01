@@ -6,8 +6,8 @@ import {
     PieChart, Pie, Cell,
 } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
+import KPICard from '@/components/dashboard/KPICard';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
-import { KPIGrid } from '@/components/shared';
 import { fetchBusinessData } from '@/services/business.service';
 import {
     AXIS_TICK_STYLE, AXIS_LINE_STYLE, GRID_STROKE, GRID_DASH,
@@ -41,10 +41,19 @@ export default function BusinessPage() {
                 subtitle="Indicateurs stratégiques d'engagement, de rétention et de performance"
             />
 
-            <KPIGrid
-                items={data.kpis}
-                columns={{ xs: 12, sm: 6, md: 4, lg: 2 }}
-            />
+            {/* KPI Cards */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+                {data.kpis.map((kpi) => (
+                    <Grid key={kpi.id} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+                        <KPICard
+                            label={kpi.label}
+                            value={kpi.unit ? `${kpi.value}${kpi.unit}` : kpi.value}
+                            trend={kpi.trend}
+                            status={kpi.status}
+                        />
+                    </Grid>
+                ))}
+            </Grid>
 
             {/* Engagement trend (LineChart) */}
             <Card sx={{ p: 2, mb: 3 }}>
