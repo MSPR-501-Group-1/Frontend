@@ -280,5 +280,55 @@ export interface SystemConfig {
     validationRules: ValidationRule[];
     alertThresholds: AlertThreshold[];
     retentionDays: number;
-    refreshInterval: number;    // seconds
+    refreshInterval: number;
+}
+
+// ─── Validation Batch models (ETL CSV OK/KO workflow) ───────
+
+/**
+ * Représente un lot de données produit par l'ETL (un run Spark).
+ *
+ * Architecture Approche A : l'ETL génère ok.csv + ko.csv.
+ * Le Backend expose ces batches via API REST.
+ * L'admin valide/rejette chaque lot depuis cette interface.
+ */
+export interface ValidationBatch {
+    id: string;
+    source: DataSource;
+    pipelineRunId: string;          // lien vers le run ETL ayant produit ce batch
+    receivedAt: string;             // ISO date — date de dépôt des CSV
+    status: ValidationStatus;
+    /** Nombre total d'enregistrements dans ok.csv */
+    okRecordCount: number;
+    /** Nombre total d'enregistrements dans ko.csv */
+    koRecordCount: number;
+    /** Reviewer ayant traité le batch (null si pending) */
+    reviewer?: string;
+    reviewedAt?: string;            // ISO date
+    comment?: string;
+    /** Nom du fichier ok.csv d'origine (traçabilité) */
+    okFileName: string;
+    /** Nom du fichier ko.csv d'origine (traçabilité) */
+    koFileName: string;
+}
+
+/** Enregistrement individuel issu d'un ko.csv — ligne en anomalie */
+export interface ValidationRecord {
+    id: string;
+    batchId: string;
+    field: string;
+    value: string;
+    validationStatus: 'flagged' | 'corrected' | 'dismissed';
+    rule?: string;                  // nom de la règle enfreinte
+    flagReason: string;
+}
+
+/** Résumé agrégé pour les KPIs de la page validation */
+export interface ValidationSummary {
+    pending: number;
+    inReview: number;
+    approved: number;
+    rejected: number;
+    corrected: number;
+    total: number;
 }
