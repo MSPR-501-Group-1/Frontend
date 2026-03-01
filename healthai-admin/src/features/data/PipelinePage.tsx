@@ -1,15 +1,9 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Box,
     Chip,
     Paper,
     Stack,
-    Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
     Typography,
     FormControl,
     InputLabel,
@@ -25,7 +19,6 @@ import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPipelineRuns } from '@/services/pipeline.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
-import { useNotificationStore } from '@/stores/notification.store';
 import type { PipelineRun, PipelineStatus } from '@/types';
 import { DataSource } from '@/types';
 
@@ -64,10 +57,6 @@ type StatusFilter = 'all' | PipelineStatus;
 
 export default function PipelinePage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [selectedRun, setSelectedRun] = useState<PipelineRun | null>(null);
-    const [justification, setJustification] = useState('');
-    const [dialogAction, setDialogAction] = useState<'approve' | 'reject'>('approve');
 
     const { data: runs, isLoading, isError } = useQuery({
         queryKey: ['pipeline-runs'],
@@ -94,22 +83,6 @@ export default function PipelinePage() {
             running: runs.filter((r) => r.status === 'running').length,
         };
     }, [runs]);
-
-    // ── Handlers ──
-    const handleOpenDialog = useCallback((run: PipelineRun, action: 'approve' | 'reject') => {
-        setSelectedRun(run);
-        setDialogAction(action);
-        setJustification('');
-        setDialogOpen(true);
-    }, []);
-
-    const handleConfirm = useCallback(() => {
-        const action = dialogAction === 'approve' ? 'approuvé' : 'rejeté';
-        useNotificationStore.getState().notify(`Pipeline ${action} avec succès`, 'success');
-        setDialogOpen(false);
-        setSelectedRun(null);
-        setJustification('');
-    }, [dialogAction]);
 
     // ── Columns ──
     const columns: GridColDef<PipelineRun>[] = useMemo(() => [
@@ -182,37 +155,7 @@ export default function PipelinePage() {
             headerName: 'Déclenché par',
             width: 160,
         },
-        {
-            field: 'actions',
-            headerName: 'Validation',
-            width: 200,
-            sortable: false,
-            filterable: false,
-            renderCell: ({ row }) => {
-                if (row.status !== 'success' && row.status !== 'failed') return null;
-                return (
-                    <Stack direction="row" spacing={1}>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            color="success"
-                            onClick={() => handleOpenDialog(row, 'approve')}
-                        >
-                            Valider
-                        </Button>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            color="error"
-                            onClick={() => handleOpenDialog(row, 'reject')}
-                        >
-                            Rejeter
-                        </Button>
-                    </Stack>
-                );
-            },
-        },
-    ], [handleOpenDialog]);
+    ], []);
 
     // ── Loading / Error ──
     if (isLoading) return <LoadingState />;
@@ -221,8 +164,8 @@ export default function PipelinePage() {
     return (
         <Box>
             <PageHeader
-                title="Pipeline ETL"
-                subtitle="Surveillance des flux d'ingestion et historique des exécutions"
+                title="Pipeline ETL — Historique"
+                subtitle="Journal en lecture seule des exécutions d'ingestion Spark (suivi de débit, statuts, durées)"
             />
 
             {/* Stats */}
@@ -279,46 +222,6 @@ export default function PipelinePage() {
                 />
             </Paper>
 
-            {/* Validation Dialog */}
-            <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>
-                    {dialogAction === 'approve' ? 'Valider' : 'Rejeter'} le batch {selectedRun?.id}
-                </DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Source : {selectedRun ? SOURCE_LABELS[selectedRun.source] : ''}
-                        {' — '}
-                        {selectedRun?.recordsProcessed.toLocaleString('fr-FR')} enregistrements traités
-                    </Typography>
-                    {selectedRun?.errorMessage && (
-                        <Typography variant="body2" color="error" sx={{ mb: 2 }}>
-                            Erreur : {selectedRun.errorMessage}
-                        </Typography>
-                    )}
-                    <TextField
-                        autoFocus
-                        fullWidth
-                        multiline
-                        rows={3}
-                        label="Justification"
-                        placeholder="Motivez votre décision…"
-                        value={justification}
-                        onChange={(e) => setJustification(e.target.value)}
-                        sx={{ mt: 1 }}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDialogOpen(false)}>Annuler</Button>
-                    <Button
-                        variant="contained"
-                        color={dialogAction === 'approve' ? 'success' : 'error'}
-                        disabled={!justification.trim()}
-                        onClick={handleConfirm}
-                    >
-                        {dialogAction === 'approve' ? 'Valider' : 'Rejeter'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 }

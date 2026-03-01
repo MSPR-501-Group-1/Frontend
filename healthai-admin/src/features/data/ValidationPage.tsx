@@ -1,43 +1,57 @@
 /**
- * ValidationPage — batch review workflow for ETL CSV OK/KO output.
+ * ValidationPage — Admin editing workspace for ETL ko.csv records.
  *
- * Workflow (Approach A — CSV intermédiaires):
- *   1. ETL Spark produit ok.csv + ko.csv par run
- *   2. Backend expose les batches via API REST
- *   3. L'admin review chaque batch ici :
- *      - Approuver → Backend insère ok.csv dans PostgreSQL
- *      - Rejeter  → ETL re-traite ko.csv corrigé
+ * Architecture (Approach A — CSV intermédiaires):
+ *   Pipeline ETL (historique, lecture seule) → produit ok.csv + ko.csv
+ *   Validation (CETTE PAGE) → Admin drill-down sur les records KO, édition
+ *   inline des valeurs, puis approbation / rejet du batch.
  *
- * Architecture layers:
- *   types/ → mocks/ → services/ → [useQuery/useMutation] → this page
+ * Layout master-detail :
+ *   ┌─────────────────────────────────────────────────────┐
+ *   │ KPI Summary  │  Tabs de filtrage par statut         │
+ *   ├─────────────────────────────────────────────────────┤
+ *   │ Batch list (selectable DataGrid)                    │
+ *   ├─────────────────────────────────────────────────────┤
+ *   │ Detail Panel ── ko.csv records  (editable DataGrid) │
+ *   │   → Inline edit correctedValue                      │
+ *   │   → Dismiss / Correct actions per record            │
+ *   │   → Approve / Reject batch after review             │
+ *   └─────────────────────────────────────────────────────┘
  */
 
 import { useState, useMemo, useCallback } from 'react';
 import {
     Box, Grid, Chip, Paper, Stack, Button, Tabs, Tab,
     Dialog, DialogTitle, DialogContent, DialogActions,
-    TextField, Typography, Tooltip,
+    TextField, Typography, Tooltip, Divider, Alert,
+    IconButton,
 } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import SaveIcon from '@mui/icons-material/Save';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchValidationBatches,
     fetchValidationSummary,
+    fetchBatchRecords,
     approveBatch,
     rejectBatch,
+    updateRecord,
+    dismissRecord,
 } from '@/services/validation.service';
 import KPICard from '@/components/dashboard/KPICard';
-import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
+import { LoadingState, ErrorState, PageHeader, ExportButton, EmptyState } from '@/components/feedback';
 import { useNotificationStore } from '@/stores/notification.store';
 import type { ExportColumn } from '@/lib/export.utils';
 import { DataSource, ValidationStatus } from '@/types';
-import type { ValidationBatch } from '@/types';
+import type { ValidationBatch, ValidationRecord } from '@/types';
 
 // ─── Display config (SRP: visual mapping isolated from logic) ──
 
@@ -53,6 +67,14 @@ const STATUS_CONFIG: Record<ValidationStatus, {
     [ValidationStatus.CORRECTED]: { label: 'Corrigé', color: 'default', icon: <BuildCircleIcon fontSize="small" /> },
 };
 
+const RECORD_STATUS_MAP: Record<ValidationRecord['validationStatus'], {
+    label: string; color: 'error' | 'success' | 'default';
+}> = {
+    flagged: { label: 'Flaggé', color: 'error' },
+    corrected: { label: 'Corrigé', color: 'success' },
+    dismissed: { label: 'Ignoré', color: 'default' },
+};
+
 const SOURCE_LABELS: Record<DataSource, string> = {
     [DataSource.NUTRITION]: 'Nutrition',
     [DataSource.EXERCISES]: 'Exercices',
@@ -61,25 +83,34 @@ const SOURCE_LABELS: Record<DataSource, string> = {
     [DataSource.BIOMETRIC]: 'Biométrique',
 };
 
-// ─── Export columns (DRY: declared once, used for CSV & PDF) ──
+// ─── Export columns ─────────────────────────────────────────
 
-const EXPORT_COLUMNS: ExportColumn[] = [
-    { field: 'id', headerName: 'ID' },
+const BATCH_EXPORT_COLUMNS: ExportColumn[] = [
+    { field: 'id', headerName: 'Batch' },
     { field: 'source', headerName: 'Source' },
-    { field: 'receivedAt', headerName: 'Date réception' },
-    { field: 'okRecordCount', headerName: 'Records OK' },
-    { field: 'koRecordCount', headerName: 'Records KO' },
+    { field: 'receivedAt', headerName: 'Réception' },
+    { field: 'okRecordCount', headerName: 'OK' },
+    { field: 'koRecordCount', headerName: 'KO' },
     { field: 'status', headerName: 'Statut' },
-    { field: 'reviewer', headerName: 'Reviewer' },
-    { field: 'comment', headerName: 'Commentaire' },
 ];
 
-// ─── Query keys (DRY: single source of truth) ──────────────
+const RECORD_EXPORT_COLUMNS: ExportColumn[] = [
+    { field: 'id', headerName: 'ID' },
+    { field: 'field', headerName: 'Champ' },
+    { field: 'originalValue', headerName: 'Valeur originale' },
+    { field: 'correctedValue', headerName: 'Valeur corrigée' },
+    { field: 'validationStatus', headerName: 'Statut' },
+    { field: 'rule', headerName: 'Règle' },
+    { field: 'flagReason', headerName: 'Raison' },
+];
+
+// ─── Query keys ─────────────────────────────────────────────
 
 const BATCHES_KEY = ['validation-batches'] as const;
 const SUMMARY_KEY = ['validation-summary'] as const;
+const batchRecordsKey = (id: string) => ['validation-records', id] as const;
 
-// ─── Tab mapping ────────────────────────────────────────────
+// ─── Tabs ───────────────────────────────────────────────────
 
 const TAB_FILTERS: (ValidationStatus | 'all')[] = [
     'all',
@@ -89,8 +120,14 @@ const TAB_FILTERS: (ValidationStatus | 'all')[] = [
     ValidationStatus.REJECTED,
     ValidationStatus.CORRECTED,
 ];
-
 const TAB_LABELS = ['Tous', 'En attente', 'En revue', 'Approuvés', 'Rejetés', 'Corrigés'];
+
+// ─── Inline edit state for a single record ──────────────────
+
+interface EditingCell {
+    recordId: string;
+    value: string;
+}
 
 // ─── Page ───────────────────────────────────────────────────
 
@@ -98,17 +135,23 @@ export default function ValidationPage() {
     const queryClient = useQueryClient();
     const { notify } = useNotificationStore();
 
+    // Master list state
     const [tabIndex, setTabIndex] = useState(0);
-    const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedBatch, setSelectedBatch] = useState<ValidationBatch | null>(null);
+
+    // Batch action dialog state
+    const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogAction, setDialogAction] = useState<'approve' | 'reject'>('approve');
     const [comment, setComment] = useState('');
 
-    // ── Fetch ──
+    // Inline edit state
+    const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
+
+    // ── Fetch batches & summary ──
     const { data: batches, isLoading: batchesLoading, isError: batchesError } = useQuery({
         queryKey: BATCHES_KEY,
         queryFn: fetchValidationBatches,
-        refetchInterval: 20_000, // polling 20s — suivi quasi temps réel des nouveaux batches ETL
+        refetchInterval: 20_000,
     });
 
     const { data: summary } = useQuery({
@@ -117,42 +160,88 @@ export default function ValidationPage() {
         refetchInterval: 20_000,
     });
 
-    // ── Filtered rows ──
+    // ── Fetch records when a batch is selected ──
+    const { data: records, isLoading: recordsLoading } = useQuery({
+        queryKey: batchRecordsKey(selectedBatch?.id ?? ''),
+        queryFn: () => fetchBatchRecords(selectedBatch!.id),
+        enabled: !!selectedBatch,
+    });
+
+    // ── Filtered batches ──
     const filteredBatches = useMemo(() => {
         if (!batches) return [];
         const filter = TAB_FILTERS[tabIndex];
-        if (filter === 'all') return batches;
-        return batches.filter((b) => b.status === filter);
+        return filter === 'all' ? batches : batches.filter((b) => b.status === filter);
     }, [batches, tabIndex]);
 
-    // ── Mutations (SRP: each handles one action) ──
+    // ── Record stats for detail panel ──
+    const recordStats = useMemo(() => {
+        if (!records) return { flagged: 0, corrected: 0, dismissed: 0, total: 0 };
+        return {
+            flagged: records.filter((r) => r.validationStatus === 'flagged').length,
+            corrected: records.filter((r) => r.validationStatus === 'corrected').length,
+            dismissed: records.filter((r) => r.validationStatus === 'dismissed').length,
+            total: records.length,
+        };
+    }, [records]);
+
+    // ── Mutations ──
     const approveMutation = useMutation({
-        mutationFn: ({ id, comment }: { id: string; comment: string }) =>
-            approveBatch(id, comment),
+        mutationFn: ({ id, comment }: { id: string; comment: string }) => approveBatch(id, comment),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: BATCHES_KEY });
             queryClient.invalidateQueries({ queryKey: SUMMARY_KEY });
             notify('Batch approuvé — insertion ok.csv en base lancée', 'success');
             setDialogOpen(false);
+            setSelectedBatch(null);
         },
-        onError: () => notify('Erreur lors de l\'approbation du batch', 'error'),
+        onError: () => notify("Erreur lors de l'approbation", 'error'),
     });
 
     const rejectMutation = useMutation({
-        mutationFn: ({ id, comment }: { id: string; comment: string }) =>
-            rejectBatch(id, comment),
+        mutationFn: ({ id, comment }: { id: string; comment: string }) => rejectBatch(id, comment),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: BATCHES_KEY });
             queryClient.invalidateQueries({ queryKey: SUMMARY_KEY });
             notify('Batch rejeté — re-soumission ETL requise', 'warning');
             setDialogOpen(false);
+            setSelectedBatch(null);
         },
-        onError: () => notify('Erreur lors du rejet du batch', 'error'),
+        onError: () => notify('Erreur lors du rejet', 'error'),
+    });
+
+    const correctMutation = useMutation({
+        mutationFn: ({ recordId, correctedValue }: { recordId: string; correctedValue: string }) =>
+            updateRecord(recordId, correctedValue),
+        onSuccess: (_, { recordId }) => {
+            queryClient.invalidateQueries({ queryKey: batchRecordsKey(selectedBatch!.id) });
+            notify(`Record ${recordId} corrigé`, 'success');
+            setEditingCell(null);
+        },
+        onError: () => notify('Erreur lors de la correction', 'error'),
+    });
+
+    const dismissMutation = useMutation({
+        mutationFn: (recordId: string) => dismissRecord(recordId),
+        onSuccess: (_, recordId) => {
+            queryClient.invalidateQueries({ queryKey: batchRecordsKey(selectedBatch!.id) });
+            notify(`Record ${recordId} ignoré`, 'info');
+        },
+        onError: () => notify('Erreur lors du dismiss', 'error'),
     });
 
     // ── Handlers ──
-    const handleOpenDialog = useCallback((batch: ValidationBatch, action: 'approve' | 'reject') => {
+    const handleSelectBatch = useCallback((batch: ValidationBatch) => {
         setSelectedBatch(batch);
+        setEditingCell(null);
+    }, []);
+
+    const handleBackToList = useCallback(() => {
+        setSelectedBatch(null);
+        setEditingCell(null);
+    }, []);
+
+    const handleOpenDialog = useCallback((action: 'approve' | 'reject') => {
         setDialogAction(action);
         setComment('');
         setDialogOpen(true);
@@ -167,57 +256,47 @@ export default function ValidationPage() {
         }
     }, [selectedBatch, dialogAction, comment, approveMutation, rejectMutation]);
 
-    const isPending = approveMutation.isPending || rejectMutation.isPending;
+    const handleStartEdit = useCallback((record: ValidationRecord) => {
+        setEditingCell({ recordId: record.id, value: record.correctedValue || record.originalValue });
+    }, []);
 
-    // ── DataGrid columns ──
-    const columns: GridColDef<ValidationBatch>[] = useMemo(() => [
+    const handleSaveEdit = useCallback(() => {
+        if (!editingCell) return;
+        correctMutation.mutate({ recordId: editingCell.recordId, correctedValue: editingCell.value });
+    }, [editingCell, correctMutation]);
+
+    const isPending = approveMutation.isPending || rejectMutation.isPending;
+    const batchEditable = selectedBatch?.status === ValidationStatus.PENDING || selectedBatch?.status === ValidationStatus.IN_REVIEW;
+
+    // ── Batch columns ──
+    const batchColumns: GridColDef<ValidationBatch>[] = useMemo(() => [
         { field: 'id', headerName: 'Batch', width: 110 },
         {
             field: 'source',
-            headerName: 'Source ETL',
-            width: 150,
+            headerName: 'Source',
+            width: 140,
             valueFormatter: (v: DataSource) => SOURCE_LABELS[v] || v,
         },
         {
             field: 'receivedAt',
             headerName: 'Réception',
-            width: 155,
+            width: 150,
             valueFormatter: (v: string) =>
                 new Date(v).toLocaleString('fr-FR', {
                     day: '2-digit', month: '2-digit', year: 'numeric',
                     hour: '2-digit', minute: '2-digit',
                 }),
         },
-        {
-            field: 'okRecordCount',
-            headerName: 'OK (ok.csv)',
-            width: 120,
-            renderCell: ({ value }) => (
-                <Tooltip title="Enregistrements valides dans ok.csv">
-                    <Chip
-                        icon={<InsertDriveFileIcon sx={{ fontSize: 14 }} />}
-                        label={(value as number).toLocaleString('fr-FR')}
-                        color="success"
-                        size="small"
-                        variant="outlined"
-                    />
-                </Tooltip>
-            ),
-        },
+        { field: 'okRecordCount', headerName: 'Records OK', width: 110, type: 'number' },
         {
             field: 'koRecordCount',
-            headerName: 'KO (ko.csv)',
-            width: 120,
+            headerName: 'Records KO',
+            width: 110,
+            type: 'number',
             renderCell: ({ value }) => (
-                <Tooltip title="Enregistrements en anomalie dans ko.csv">
-                    <Chip
-                        icon={<InsertDriveFileIcon sx={{ fontSize: 14 }} />}
-                        label={(value as number).toLocaleString('fr-FR')}
-                        color="error"
-                        size="small"
-                        variant="outlined"
-                    />
-                </Tooltip>
+                <Typography variant="body2" color="error" fontWeight={600}>
+                    {(value as number).toLocaleString('fr-FR')}
+                </Typography>
             ),
         },
         {
@@ -226,96 +305,409 @@ export default function ValidationPage() {
             width: 130,
             renderCell: ({ value }) => {
                 const cfg = STATUS_CONFIG[value as ValidationStatus];
-                return (
-                    <Chip
-                        icon={cfg.icon}
-                        label={cfg.label}
-                        color={cfg.color}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                    />
-                );
+                return <Chip icon={cfg.icon} label={cfg.label} color={cfg.color} size="small" sx={{ fontWeight: 600 }} />;
             },
         },
         {
-            field: 'reviewer',
-            headerName: 'Reviewer',
-            width: 170,
-            valueFormatter: (v: string | undefined) => v || '—',
+            field: 'actions',
+            headerName: 'Détail',
+            width: 130,
+            sortable: false,
+            filterable: false,
+            renderCell: ({ row }) => (
+                <Button
+                    size="small"
+                    variant="text"
+                    onClick={() => handleSelectBatch(row)}
+                    aria-label={`Voir les records KO du batch ${row.id}`}
+                >
+                    Ouvrir ko.csv
+                </Button>
+            ),
         },
+    ], [handleSelectBatch]);
+
+    // ── Record columns (editable) ──
+    const recordColumns: GridColDef<ValidationRecord>[] = useMemo(() => [
+        { field: 'id', headerName: 'ID', width: 100 },
         {
-            field: 'okFileName',
-            headerName: 'Fichier OK',
-            width: 220,
+            field: 'field',
+            headerName: 'Champ',
+            width: 140,
             renderCell: ({ value }) => (
-                <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 12 }}>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 13 }}>
                     {value as string}
                 </Typography>
             ),
         },
         {
-            field: 'actions',
+            field: 'originalValue',
+            headerName: 'Valeur originale',
+            width: 160,
+            renderCell: ({ value }) => (
+                <Tooltip title="Valeur telle que figurant dans ko.csv">
+                    <Typography variant="body2" color="error.main" sx={{ fontFamily: 'monospace', fontSize: 13 }}>
+                        {(value as string) || '(vide)'}
+                    </Typography>
+                </Tooltip>
+            ),
+        },
+        {
+            field: 'correctedValue',
+            headerName: 'Valeur corrigée',
+            width: 200,
+            renderCell: ({ row }) => {
+                // Inline editing
+                if (editingCell?.recordId === row.id) {
+                    return (
+                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                            <TextField
+                                size="small"
+                                variant="outlined"
+                                value={editingCell.value}
+                                onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveEdit();
+                                    if (e.key === 'Escape') setEditingCell(null);
+                                }}
+                                autoFocus
+                                sx={{
+                                    flex: 1,
+                                    '& .MuiInputBase-input': { fontFamily: 'monospace', fontSize: 13, py: 0.5 },
+                                }}
+                            />
+                            <IconButton
+                                size="small"
+                                color="success"
+                                onClick={handleSaveEdit}
+                                disabled={correctMutation.isPending}
+                                aria-label="Sauvegarder la correction"
+                            >
+                                <SaveIcon fontSize="small" />
+                            </IconButton>
+                        </Stack>
+                    );
+                }
+
+                // Display mode
+                if (row.correctedValue) {
+                    return (
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Typography variant="body2" color="success.main" sx={{ fontFamily: 'monospace', fontSize: 13 }}>
+                                {row.correctedValue}
+                            </Typography>
+                            {batchEditable && (
+                                <IconButton size="small" onClick={() => handleStartEdit(row)} aria-label="Ré-éditer">
+                                    <EditIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                            )}
+                        </Stack>
+                    );
+                }
+
+                // No correction yet
+                return batchEditable ? (
+                    <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<EditIcon sx={{ fontSize: 14 }} />}
+                        onClick={() => handleStartEdit(row)}
+                        sx={{ fontFamily: 'monospace', fontSize: 12, textTransform: 'none' }}
+                    >
+                        Corriger
+                    </Button>
+                ) : (
+                    <Typography variant="body2" color="text.disabled">—</Typography>
+                );
+            },
+        },
+        {
+            field: 'flagReason',
+            headerName: 'Raison du flag',
+            width: 230,
+        },
+        {
+            field: 'rule',
+            headerName: 'Règle',
+            width: 150,
+            renderCell: ({ value }) => (
+                <Chip label={value as string} size="small" variant="outlined" sx={{ fontFamily: 'monospace', fontSize: 11 }} />
+            ),
+        },
+        {
+            field: 'validationStatus',
+            headerName: 'Statut',
+            width: 120,
+            renderCell: ({ value }) => {
+                const cfg = RECORD_STATUS_MAP[value as ValidationRecord['validationStatus']];
+                return <Chip label={cfg.label} color={cfg.color} size="small" />;
+            },
+        },
+        {
+            field: 'recordActions',
             headerName: 'Actions',
-            width: 220,
+            width: 130,
             sortable: false,
             filterable: false,
             renderCell: ({ row }) => {
-                // Only pending and in_review batches can be acted upon
-                if (row.status !== ValidationStatus.PENDING && row.status !== ValidationStatus.IN_REVIEW) {
-                    return row.comment ? (
-                        <Tooltip title={row.comment}>
-                            <Typography variant="caption" color="text.secondary" noWrap>
-                                {row.comment}
-                            </Typography>
-                        </Tooltip>
-                    ) : null;
-                }
+                if (!batchEditable || row.validationStatus !== 'flagged') return null;
                 return (
-                    <Stack direction="row" spacing={1}>
-                        <Button
+                    <Stack direction="row" spacing={0.5}>
+                        <IconButton
                             size="small"
-                            variant="outlined"
-                            color="success"
-                            onClick={() => handleOpenDialog(row, 'approve')}
-                            aria-label={`Approuver le batch ${row.id}`}
+                            color="primary"
+                            onClick={() => handleStartEdit(row)}
+                            aria-label={`Éditer le record ${row.id}`}
                         >
-                            Approuver
-                        </Button>
-                        <Button
+                            <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
                             size="small"
-                            variant="outlined"
-                            color="error"
-                            onClick={() => handleOpenDialog(row, 'reject')}
-                            aria-label={`Rejeter le batch ${row.id}`}
+                            color="default"
+                            onClick={() => dismissMutation.mutate(row.id)}
+                            disabled={dismissMutation.isPending}
+                            aria-label={`Ignorer le record ${row.id}`}
                         >
-                            Rejeter
-                        </Button>
+                            <VisibilityOffIcon fontSize="small" />
+                        </IconButton>
                     </Stack>
                 );
             },
         },
-    ], [handleOpenDialog]);
+    ], [editingCell, batchEditable, handleStartEdit, handleSaveEdit, correctMutation.isPending, dismissMutation]);
 
     // ── Loading / Error ──
     if (batchesLoading) return <LoadingState />;
     if (batchesError) return <ErrorState message="Erreur lors du chargement des batches de validation." />;
 
+    // ────────────────────────────────────────────────────────
+    // DETAIL VIEW — ko.csv record editing for selected batch
+    // ────────────────────────────────────────────────────────
+    if (selectedBatch) {
+        const statusCfg = STATUS_CONFIG[selectedBatch.status];
+        return (
+            <Box>
+                <PageHeader
+                    title={`Correction — ${selectedBatch.id}`}
+                    subtitle={`${SOURCE_LABELS[selectedBatch.source]} · ${selectedBatch.koFileName}`}
+                    actions={
+                        <Stack direction="row" spacing={1}>
+                            <ExportButton
+                                fileName={`records-${selectedBatch.id}`}
+                                title={`Records KO — ${selectedBatch.id}`}
+                                columns={RECORD_EXPORT_COLUMNS}
+                                rows={(records ?? []) as unknown as Record<string, unknown>[]}
+                            />
+                            <Button
+                                variant="outlined"
+                                startIcon={<ArrowBackIcon />}
+                                onClick={handleBackToList}
+                            >
+                                Retour
+                            </Button>
+                        </Stack>
+                    }
+                />
+
+                {/* Batch context bar */}
+                <Paper elevation={0} sx={{ p: 2, mb: 2 }}>
+                    <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap" useFlexGap>
+                        <Chip icon={statusCfg.icon} label={statusCfg.label} color={statusCfg.color} />
+                        <Typography variant="body2">
+                            <strong>{selectedBatch.okRecordCount.toLocaleString('fr-FR')}</strong> records OK
+                            {' · '}
+                            <Typography component="span" color="error.main" fontWeight={600} variant="body2">
+                                {selectedBatch.koRecordCount.toLocaleString('fr-FR')}
+                            </Typography> records KO
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: 12 }}>
+                            {selectedBatch.okFileName} / {selectedBatch.koFileName}
+                        </Typography>
+                        {selectedBatch.reviewer && (
+                            <Typography variant="body2" color="text.secondary">
+                                Reviewer : {selectedBatch.reviewer}
+                            </Typography>
+                        )}
+                    </Stack>
+                </Paper>
+
+                {/* Record stats */}
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <KPICard label="Flaggés" value={recordStats.flagged} status={recordStats.flagged > 0 ? 'error' : 'success'} />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <KPICard label="Corrigés" value={recordStats.corrected} status="success" />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <KPICard label="Ignorés" value={recordStats.dismissed} status="warning" />
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <KPICard label="Total records" value={recordStats.total} status="success" />
+                    </Grid>
+                </Grid>
+
+                {batchEditable && recordStats.flagged > 0 && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                        <strong>{recordStats.flagged}</strong> enregistrement{recordStats.flagged > 1 ? 's' : ''} en anomalie
+                        — cliquez sur <EditIcon sx={{ fontSize: 14, verticalAlign: 'middle' }} /> pour corriger
+                        ou <VisibilityOffIcon sx={{ fontSize: 14, verticalAlign: 'middle' }} /> pour ignorer.
+                        Approuvez ou rejetez le batch une fois les corrections terminées.
+                    </Alert>
+                )}
+
+                {/* Records DataGrid */}
+                {recordsLoading ? (
+                    <LoadingState />
+                ) : !records?.length ? (
+                    <EmptyState message="Aucun enregistrement KO pour ce batch." />
+                ) : (
+                    <Paper elevation={0} sx={{ height: 420, mb: 3 }}>
+                        <DataGrid
+                            rows={records}
+                            columns={recordColumns}
+                            aria-label={`Enregistrements KO du batch ${selectedBatch.id}`}
+                            initialState={{
+                                sorting: { sortModel: [{ field: 'validationStatus', sort: 'asc' }] },
+                                pagination: { paginationModel: { pageSize: 10 } },
+                            }}
+                            pageSizeOptions={[10, 25, 50]}
+                            disableRowSelectionOnClick
+                            sx={{
+                                border: 'none',
+                                '& .MuiDataGrid-columnHeaders': { bgcolor: 'action.hover', fontWeight: 600 },
+                                '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' },
+                            }}
+                        />
+                    </Paper>
+                )}
+
+                {/* Batch-level actions */}
+                {batchEditable && (
+                    <>
+                        <Divider sx={{ my: 2 }} />
+                        <Stack direction="row" spacing={2} justifyContent="flex-end">
+                            <Button
+                                variant="contained"
+                                color="success"
+                                startIcon={<CheckCircleOutlineIcon />}
+                                onClick={() => handleOpenDialog('approve')}
+                                aria-label="Approuver le batch"
+                            >
+                                Approuver le batch
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                startIcon={<CancelOutlinedIcon />}
+                                onClick={() => handleOpenDialog('reject')}
+                                aria-label="Rejeter le batch"
+                            >
+                                Rejeter le batch
+                            </Button>
+                        </Stack>
+                    </>
+                )}
+
+                {/* Approve / Reject Dialog */}
+                <Dialog
+                    open={dialogOpen}
+                    onClose={() => setDialogOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    aria-labelledby="batch-action-dialog"
+                >
+                    <DialogTitle id="batch-action-dialog">
+                        {dialogAction === 'approve' ? 'Approuver' : 'Rejeter'} le batch {selectedBatch.id}
+                    </DialogTitle>
+                    <DialogContent>
+                        <Stack spacing={2} sx={{ pt: 1 }}>
+                            <Stack direction="row" spacing={2}>
+                                <Chip
+                                    label={`${recordStats.corrected} corrigé${recordStats.corrected > 1 ? 's' : ''}`}
+                                    color="success" size="small" variant="outlined"
+                                />
+                                <Chip
+                                    label={`${recordStats.flagged} encore flaggé${recordStats.flagged > 1 ? 's' : ''}`}
+                                    color={recordStats.flagged > 0 ? 'error' : 'success'} size="small" variant="outlined"
+                                />
+                                <Chip
+                                    label={`${recordStats.dismissed} ignoré${recordStats.dismissed > 1 ? 's' : ''}`}
+                                    size="small" variant="outlined"
+                                />
+                            </Stack>
+
+                            {dialogAction === 'approve' ? (
+                                <Typography variant="body2">
+                                    En approuvant, les <strong>{selectedBatch.okRecordCount.toLocaleString('fr-FR')}</strong> enregistrements
+                                    valides seront insérés en base. Les <strong>{recordStats.corrected}</strong> corrections
+                                    seront appliquées au fichier corrigé.
+                                </Typography>
+                            ) : (
+                                <Typography variant="body2">
+                                    En rejetant, le fichier <strong>{selectedBatch.koFileName}</strong> sera
+                                    re-soumis au pipeline ETL pour re-traitement complet.
+                                </Typography>
+                            )}
+
+                            <TextField
+                                autoFocus
+                                fullWidth
+                                multiline
+                                rows={3}
+                                label="Commentaire obligatoire"
+                                placeholder={
+                                    dialogAction === 'approve'
+                                        ? 'Résumez les corrections apportées…'
+                                        : 'Décrivez les anomalies justifiant le rejet…'
+                                }
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                            />
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setDialogOpen(false)} disabled={isPending}>
+                            Annuler
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color={dialogAction === 'approve' ? 'success' : 'error'}
+                            disabled={!comment.trim() || isPending}
+                            onClick={handleConfirm}
+                        >
+                            {isPending
+                                ? 'Traitement…'
+                                : dialogAction === 'approve'
+                                    ? 'Approuver → Insérer en BDD'
+                                    : 'Rejeter → Re-soumettre ETL'
+                            }
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </Box>
+        );
+    }
+
+    // ────────────────────────────────────────────────────────
+    // MASTER VIEW — batch list with summary + tabs
+    // ────────────────────────────────────────────────────────
     return (
         <Box>
             <PageHeader
                 title="Validation des données"
-                subtitle="Workflow de revue des lots ETL — ok.csv / ko.csv (Approche A)"
+                subtitle="Espace de correction admin — éditez les records KO issus de l'ETL, puis approuvez ou rejetez chaque batch"
                 actions={
                     <ExportButton
                         fileName="validation-batches"
                         title="Validation — Batches ETL"
-                        columns={EXPORT_COLUMNS}
+                        columns={BATCH_EXPORT_COLUMNS}
                         rows={filteredBatches as unknown as Record<string, unknown>[]}
                     />
                 }
             />
 
-            {/* KPI Summary Cards */}
+            {/* KPI Summary */}
             {summary && (
                 <Grid container spacing={2} sx={{ mb: 3 }}>
                     <Grid size={{ xs: 6, sm: 4, md: 2 }}>
@@ -334,17 +726,17 @@ export default function ValidationPage() {
                         <KPICard label="Corrigés" value={summary.corrected} status="success" />
                     </Grid>
                     <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-                        <KPICard label="Total batches" value={summary.total} status="success" />
+                        <KPICard label="Total" value={summary.total} status="success" />
                     </Grid>
                 </Grid>
             )}
 
-            {/* Status tabs */}
+            {/* Tabs */}
             <Tabs
                 value={tabIndex}
                 onChange={(_, v) => setTabIndex(v)}
                 sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
-                aria-label="Filtrer par statut de validation"
+                aria-label="Filtrer par statut"
             >
                 {TAB_LABELS.map((label, i) => (
                     <Tab
@@ -354,14 +746,7 @@ export default function ValidationPage() {
                                 <span>{label}</span>
                                 {summary && i > 0 && (
                                     <Chip
-                                        label={[
-                                            0, // "all" — not shown
-                                            summary.pending,
-                                            summary.inReview,
-                                            summary.approved,
-                                            summary.rejected,
-                                            summary.corrected,
-                                        ][i]}
+                                        label={[0, summary.pending, summary.inReview, summary.approved, summary.rejected, summary.corrected][i]}
                                         size="small"
                                         sx={{ height: 20, fontSize: 11 }}
                                     />
@@ -372,17 +757,17 @@ export default function ValidationPage() {
                 ))}
             </Tabs>
 
-            {/* Batch count */}
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {filteredBatches.length} batch{filteredBatches.length > 1 ? 'es' : ''} affiché{filteredBatches.length > 1 ? 's' : ''}
+                {filteredBatches.length} batch{filteredBatches.length > 1 ? 'es' : ''}
+                {' — Cliquez sur "Ouvrir ko.csv" pour éditer les enregistrements en anomalie'}
             </Typography>
 
-            {/* DataGrid */}
-            <Paper elevation={0} sx={{ height: 520, mb: 3 }}>
+            {/* Batch DataGrid */}
+            <Paper elevation={0} sx={{ height: 520 }}>
                 <DataGrid
                     rows={filteredBatches}
-                    columns={columns}
-                    aria-label="Tableau des batches de validation ETL"
+                    columns={batchColumns}
+                    aria-label="Batches de validation ETL"
                     initialState={{
                         sorting: { sortModel: [{ field: 'receivedAt', sort: 'desc' }] },
                         pagination: { paginationModel: { pageSize: 10 } },
@@ -391,102 +776,11 @@ export default function ValidationPage() {
                     disableRowSelectionOnClick
                     sx={{
                         border: 'none',
-                        '& .MuiDataGrid-columnHeaders': {
-                            bgcolor: 'action.hover',
-                            fontWeight: 600,
-                        },
-                        '& .MuiDataGrid-cell': {
-                            display: 'flex',
-                            alignItems: 'center',
-                        },
+                        '& .MuiDataGrid-columnHeaders': { bgcolor: 'action.hover', fontWeight: 600 },
+                        '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' },
                     }}
                 />
             </Paper>
-
-            {/* Approve / Reject Dialog */}
-            <Dialog
-                open={dialogOpen}
-                onClose={() => setDialogOpen(false)}
-                maxWidth="sm"
-                fullWidth
-                aria-labelledby="validation-dialog-title"
-            >
-                <DialogTitle id="validation-dialog-title">
-                    {dialogAction === 'approve' ? 'Approuver' : 'Rejeter'} le batch {selectedBatch?.id}
-                </DialogTitle>
-                <DialogContent>
-                    {selectedBatch && (
-                        <Box sx={{ mb: 2 }}>
-                            <Typography variant="body2" color="text.secondary">
-                                Source : <strong>{SOURCE_LABELS[selectedBatch.source]}</strong>
-                            </Typography>
-                            <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-                                <Chip
-                                    label={`${selectedBatch.okRecordCount.toLocaleString('fr-FR')} records OK`}
-                                    color="success"
-                                    size="small"
-                                    variant="outlined"
-                                />
-                                <Chip
-                                    label={`${selectedBatch.koRecordCount.toLocaleString('fr-FR')} records KO`}
-                                    color="error"
-                                    size="small"
-                                    variant="outlined"
-                                />
-                            </Stack>
-                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                                Fichiers : {selectedBatch.okFileName} / {selectedBatch.koFileName}
-                            </Typography>
-                        </Box>
-                    )}
-
-                    {dialogAction === 'approve' ? (
-                        <Typography variant="body2" sx={{ mb: 2 }}>
-                            En approuvant ce batch, les <strong>{selectedBatch?.okRecordCount.toLocaleString('fr-FR')}</strong> enregistrements
-                            de <strong>{selectedBatch?.okFileName}</strong> seront insérés en base PostgreSQL.
-                        </Typography>
-                    ) : (
-                        <Typography variant="body2" sx={{ mb: 2 }}>
-                            En rejetant ce batch, le fichier <strong>{selectedBatch?.koFileName}</strong> sera
-                            re-soumis au pipeline ETL pour correction et re-traitement.
-                        </Typography>
-                    )}
-
-                    <TextField
-                        autoFocus
-                        fullWidth
-                        multiline
-                        rows={3}
-                        label="Commentaire obligatoire"
-                        placeholder={
-                            dialogAction === 'approve'
-                                ? 'Justifiez l\'approbation du lot…'
-                                : 'Décrivez les anomalies justifiant le rejet…'
-                        }
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        sx={{ mt: 1 }}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDialogOpen(false)} disabled={isPending}>
-                        Annuler
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color={dialogAction === 'approve' ? 'success' : 'error'}
-                        disabled={!comment.trim() || isPending}
-                        onClick={handleConfirm}
-                    >
-                        {isPending
-                            ? 'Traitement…'
-                            : dialogAction === 'approve'
-                                ? 'Approuver → Insérer en BDD'
-                                : 'Rejeter → Re-soumettre ETL'
-                        }
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 }

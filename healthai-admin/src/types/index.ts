@@ -316,11 +316,19 @@ export interface ValidationBatch {
 export interface ValidationRecord {
     id: string;
     batchId: string;
+    /** Nom du champ en anomalie (ex: heart_rate, calories, weight_kg) */
     field: string;
-    value: string;
+    /** Valeur originale (telle que figurant dans ko.csv) */
+    originalValue: string;
+    /** Valeur corrigée par l'admin (null si pas encore édité) */
+    correctedValue?: string;
     validationStatus: 'flagged' | 'corrected' | 'dismissed';
     rule?: string;                  // nom de la règle enfreinte
     flagReason: string;
+    /** Admin ayant effectué la correction */
+    correctedBy?: string;
+    /** Date ISO de la correction */
+    correctedAt?: string;
 }
 
 /** Résumé agrégé pour les KPIs de la page validation */

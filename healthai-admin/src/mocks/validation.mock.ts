@@ -114,14 +114,19 @@ const RECORDS: ValidationRecord[] = (() => {
                     : batch.status === ValidationStatus.REJECTED
                         ? ['flagged', 'dismissed']
                         : ['flagged'];
+            const status = pick(statusOptions);
+            const originalValue = pick(['320', '-500', '', 'abc', '2026-13-45', '0.001', '999999', 'null']);
             records.push({
                 id: `rec-${String(id).padStart(4, '0')}`,
                 batchId: batch.id,
                 field: pick(FIELDS),
-                value: pick(['320', '-500', '', 'abc', '2026-13-45', '0.001', '999999', 'null']),
-                validationStatus: pick(statusOptions),
+                originalValue,
+                correctedValue: status === 'corrected' ? pick(['72', '1800', '8500', '75.2', '0.5', '120/80']) : undefined,
+                validationStatus: status,
                 rule: pick(RULES),
                 flagReason: pick(FLAG_REASONS),
+                correctedBy: status === 'corrected' ? 'admin@healthai.fr' : undefined,
+                correctedAt: status === 'corrected' ? new Date().toISOString() : undefined,
             });
         }
     }
@@ -179,5 +184,28 @@ export const validationMock = {
         batch.reviewedAt = new Date().toISOString();
         batch.comment = comment;
         return { ...batch };
+    },
+
+    /** Corriger la valeur d'un enregistrement flagged dans ko.csv */
+    async updateRecord(recordId: string, correctedValue: string): Promise<ValidationRecord> {
+        await delay(100, 300);
+        const record = RECORDS.find((r) => r.id === recordId);
+        if (!record) throw new Error(`Record ${recordId} introuvable`);
+        record.correctedValue = correctedValue;
+        record.validationStatus = 'corrected';
+        record.correctedBy = 'admin@healthai.fr';
+        record.correctedAt = new Date().toISOString();
+        return { ...record };
+    },
+
+    /** Ignorer (dismiss) un enregistrement — anomalie jugée non-pertinente */
+    async dismissRecord(recordId: string): Promise<ValidationRecord> {
+        await delay(100, 300);
+        const record = RECORDS.find((r) => r.id === recordId);
+        if (!record) throw new Error(`Record ${recordId} introuvable`);
+        record.validationStatus = 'dismissed';
+        record.correctedBy = 'admin@healthai.fr';
+        record.correctedAt = new Date().toISOString();
+        return { ...record };
     },
 };

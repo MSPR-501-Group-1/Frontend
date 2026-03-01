@@ -47,3 +47,15 @@ export async function rejectBatch(id: string, comment: string): Promise<Validati
     if (USE_MOCK) return validationMock.rejectBatch(id, comment);
     return apiClient.post<ValidationBatch>(`/validation/batches/${id}/reject`, { comment });
 }
+
+/** Correct a single flagged record — admin provides the new value. */
+export async function updateRecord(recordId: string, correctedValue: string): Promise<ValidationRecord> {
+    if (USE_MOCK) return validationMock.updateRecord(recordId, correctedValue);
+    return apiClient.patch<ValidationRecord>(`/validation/records/${recordId}`, { correctedValue });
+}
+
+/** Dismiss a flagged record — anomaly deemed irrelevant. */
+export async function dismissRecord(recordId: string): Promise<ValidationRecord> {
+    if (USE_MOCK) return validationMock.dismissRecord(recordId);
+    return apiClient.patch<ValidationRecord>(`/validation/records/${recordId}/dismiss`, {});
+}
