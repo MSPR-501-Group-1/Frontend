@@ -250,3 +250,35 @@ export interface PartnerDashboardData {
     partnerTypesBreakdown: CategoryDataPoint[];
     monthlyApiCalls: TimeSeriesPoint[];
 }
+
+// ─── Configuration / Validation Rules models ────────────────
+
+export type ValidationRuleType = 'range' | 'pattern' | 'required' | 'unique';
+
+export interface ValidationRule {
+    id: string;
+    field: string;
+    source: DataSource;
+    type: ValidationRuleType;
+    minValue?: number;
+    maxValue?: number;
+    pattern?: string;
+    enabled: boolean;
+    description: string;
+}
+
+export interface AlertThreshold {
+    id: string;
+    metric: string;
+    warningLevel: number;
+    criticalLevel: number;
+    enabled: boolean;
+    description: string;
+}
+
+export interface SystemConfig {
+    validationRules: ValidationRule[];
+    alertThresholds: AlertThreshold[];
+    retentionDays: number;
+    refreshInterval: number;    // seconds
+}
