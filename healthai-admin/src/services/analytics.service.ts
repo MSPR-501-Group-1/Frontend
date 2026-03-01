@@ -8,8 +8,7 @@
 import { apiClient } from '@/api';
 import type { AnalyticsPageData } from '@/types';
 import { nutritionData, fitnessData, biometricData } from '@/mocks/analytics';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 /** Fetch nutrition analytics. */
 export async function fetchNutritionData(): Promise<AnalyticsPageData> {

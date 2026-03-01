@@ -10,9 +10,7 @@
 import { apiClient } from '@/api';
 import type { Anomaly } from '@/types';
 import { anomaliesMock } from '@/mocks/anomalies.mock';
-
-// Set to `false` (or use VITE_USE_MOCKS env) when the backend is available
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 // ─── Public service API ─────────────────────────────────────
 

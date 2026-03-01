@@ -7,8 +7,7 @@
 import { apiClient } from '@/api';
 import type { DashboardData } from '@/types';
 import { dashboardData as mockData } from '@/mocks/data';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 /** Fetch the complete dashboard dataset (KPIs + all chart series). */
 export async function fetchDashboardData(): Promise<DashboardData> {

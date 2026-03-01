@@ -8,8 +8,7 @@
 import { apiClient } from '@/api';
 import type { PipelineRun } from '@/types';
 import { pipelineMock } from '@/mocks/pipeline.mock';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 /** Fetch all pipeline execution records. */
 export async function fetchPipelineRuns(): Promise<PipelineRun[]> {

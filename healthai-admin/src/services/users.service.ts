@@ -8,8 +8,7 @@
 import { apiClient } from '@/api';
 import type { AdminUser, CreateUserPayload } from '@/types';
 import { usersMock } from '@/mocks/users.mock';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 /** Fetch all admin user accounts. */
 export async function fetchUsers(): Promise<AdminUser[]> {

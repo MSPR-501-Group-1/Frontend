@@ -8,8 +8,7 @@
 import { apiClient } from '@/api';
 import type { User } from '@/types';
 import { UserRole } from '@/types';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 // ─── Types ──────────────────────────────────────────────────
 

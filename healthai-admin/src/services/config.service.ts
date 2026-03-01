@@ -8,8 +8,7 @@
 import { apiClient } from '@/api';
 import type { SystemConfig, ValidationRule, AlertThreshold } from '@/types';
 import { configMock } from '@/mocks/config.mock';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 // ─── Public service API ─────────────────────────────────────
 

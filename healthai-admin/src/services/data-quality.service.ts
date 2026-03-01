@@ -7,8 +7,7 @@
 import { apiClient } from '@/api';
 import type { DataQualityScore } from '@/types';
 import { dataQualityMock } from '@/mocks/data-quality.mock';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 /** Fetch current data quality scores + 30-day history. */
 export async function fetchDataQualityScore(): Promise<DataQualityScore> {

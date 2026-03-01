@@ -13,8 +13,7 @@
 import { apiClient } from '@/api';
 import type { ValidationBatch, ValidationSummary, ValidationRecord } from '@/types';
 import { validationMock } from '@/mocks/validation.mock';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 // ─── Public service API ─────────────────────────────────────
 

@@ -8,8 +8,7 @@
 import { apiClient } from '@/api';
 import type { BusinessPageData } from '@/types';
 import { businessMock } from '@/mocks/business.mock';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 /** Fetch the complete business KPIs dataset. */
 export async function fetchBusinessData(): Promise<BusinessPageData> {

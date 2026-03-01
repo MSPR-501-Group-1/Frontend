@@ -8,8 +8,7 @@
 import { apiClient } from '@/api';
 import type { Partner, PartnerDashboardData } from '@/types';
 import { partnersMock } from '@/mocks/partners.mock';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 // ─── Public service API ─────────────────────────────────────
 

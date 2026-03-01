@@ -8,8 +8,7 @@
 import { apiClient } from '@/api';
 import type { AuditLog } from '@/types';
 import { auditMock } from '@/mocks/audit.mock';
-
-const USE_MOCK = true;
+import { USE_MOCK } from '@/lib/env';
 
 /** Fetch all audit log entries. */
 export async function fetchAuditLogs(): Promise<AuditLog[]> {
