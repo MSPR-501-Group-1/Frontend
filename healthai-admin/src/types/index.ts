@@ -211,3 +211,42 @@ export interface BusinessPageData {
     featureAdoption: CategoryDataPoint[];
     revenueVsTarget: MultiSeriesPoint[];
 }
+
+// ─── Partners B2B models ────────────────────────────────────
+
+export type PartnerType = 'gym' | 'insurance' | 'mutual' | 'corporate_wellness';
+export type PartnerStatus = 'active' | 'trial' | 'suspended' | 'churned';
+
+export const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
+    gym: 'Salle de sport',
+    insurance: 'Assurance',
+    mutual: 'Mutuelle',
+    corporate_wellness: 'Bien-être entreprise',
+};
+
+export const PARTNER_STATUS_LABELS: Record<PartnerStatus, string> = {
+    active: 'Actif',
+    trial: 'Essai',
+    suspended: 'Suspendu',
+    churned: 'Résilié',
+};
+
+export interface Partner {
+    id: string;
+    name: string;
+    type: PartnerType;
+    status: PartnerStatus;
+    contractStart: string;      // ISO date
+    contractEnd: string;        // ISO date
+    usersCount: number;
+    apiCallsMonth: number;
+    lastActivity: string;       // ISO date
+    satisfactionScore: number;  // 0–100
+}
+
+export interface PartnerDashboardData {
+    partners: Partner[];
+    usageByPartner: CategoryDataPoint[];
+    partnerTypesBreakdown: CategoryDataPoint[];
+    monthlyApiCalls: TimeSeriesPoint[];
+}
