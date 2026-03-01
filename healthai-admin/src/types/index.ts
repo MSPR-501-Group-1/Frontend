@@ -202,6 +202,14 @@ export interface AdminUser {
     lastLogin: string | null;
 }
 
+/** Payload for creating a new admin user account */
+export interface CreateUserPayload {
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: UserRole;
+}
+
 // ─── Business KPI page models ───────────────────────────────
 
 export interface BusinessPageData {

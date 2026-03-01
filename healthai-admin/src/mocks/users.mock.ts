@@ -149,4 +149,20 @@ export const usersMock = {
         await delay(300, 600);
         return [...SEED];
     },
+
+    async createUser(payload: { email: string; firstName: string; lastName: string; role: import('@/types').UserRole }): Promise<AdminUser> {
+        await delay(300, 600);
+        const newUser: AdminUser = {
+            id: String(SEED.length + 1),
+            email: payload.email,
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            role: payload.role,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            lastLogin: null,
+        };
+        SEED.push(newUser);
+        return { ...newUser };
+    },
 };
