@@ -14,3 +14,4 @@ export { fetchPipelineRuns } from './pipeline.service';
 export { fetchBusinessData } from './business.service';
 export { fetchPartners, fetchPartnerDashboard } from './partners.service';
 export { fetchSystemConfig, updateValidationRule, toggleAlertThreshold, updateSystemParams } from './config.service';
+export { fetchValidationBatches, fetchValidationSummary, fetchBatchRecords, approveBatch, rejectBatch } from './validation.service';
