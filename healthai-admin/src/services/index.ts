@@ -12,3 +12,4 @@ export { fetchAuditLogs } from './audit.service';
 export { fetchUsers } from './users.service';
 export { fetchPipelineRuns } from './pipeline.service';
 export { fetchBusinessData } from './business.service';
+export { fetchPartners, fetchPartnerDashboard } from './partners.service';
