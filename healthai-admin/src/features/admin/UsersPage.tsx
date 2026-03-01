@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback } from 'react';
 import {
     Box,
     Chip,
-    Paper,
     Stack,
     Button,
     Dialog,
@@ -16,10 +15,12 @@ import {
     MenuItem,
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsers, createUser } from '@/services/users.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
+import { DataTable, FilterBar, StatsBar } from '@/components/shared';
+import { formatDate, formatDateTime } from '@/lib/formatters';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
 import type { AdminUser, AccountStatus, CreateUserPayload } from '@/types';
@@ -45,6 +46,18 @@ const STATUS_CONFIG: Record<AccountStatus, { label: string; color: 'success' | '
 
 const USERS_KEY = ['admin-users'] as const;
 
+const ROLE_OPTIONS = [
+    { value: 'all', label: 'Tous les rôles' },
+    ...Object.entries(ROLE_LABELS).map(([key, label]) => ({ value: key, label })),
+];
+
+const STATUS_OPTIONS = [
+    { value: 'all', label: 'Tous les statuts' },
+    { value: 'active', label: 'Actif' },
+    { value: 'inactive', label: 'Inactif' },
+    { value: 'suspended', label: 'Suspendu' },
+];
+
 const EMPTY_FORM: CreateUserPayload = {
     email: '',
     firstName: '',
@@ -62,6 +75,8 @@ export default function UsersPage() {
 
     // ── Create user dialog state ──
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [form, setForm] = useState<CreateUserPayload>(EMPTY_FORM);
     const [touched, setTouched] = useState(false);
 
@@ -124,6 +139,16 @@ export default function UsersPage() {
         };
     }, [users]);
 
+    // ── Filtered rows ──
+    const filteredUsers = useMemo(() => {
+        if (!users) return [];
+        return users.filter((u) => {
+            if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+            if (statusFilter !== 'all' && u.status !== statusFilter) return false;
+            return true;
+        });
+    }, [users, roleFilter, statusFilter]);
+
     // ── Columns ──
     const columns: GridColDef<AdminUser>[] = useMemo(() => [
         {
@@ -166,22 +191,13 @@ export default function UsersPage() {
             field: 'createdAt',
             headerName: 'Créé le',
             width: 130,
-            valueFormatter: (value: string) =>
-                new Date(value).toLocaleDateString('fr-FR', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                }),
+            valueFormatter: (value: string) => formatDate(value),
         },
         {
             field: 'lastLogin',
             headerName: 'Dernière connexion',
             width: 160,
-            valueFormatter: (value: string | null) => {
-                if (!value) return 'Jamais';
-                return new Date(value).toLocaleString('fr-FR', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit',
-                });
-            },
+            valueFormatter: (value: string | null) => formatDateTime(value),
         },
         ...(isAdmin
             ? [{
@@ -221,38 +237,28 @@ export default function UsersPage() {
                 }
             />
 
-            {/* Stats */}
-            <Stack direction="row" spacing={1.5} sx={{ mb: 3 }}>
-                <Chip label={`${stats.total} comptes`} variant="outlined" />
-                <Chip label={`${stats.active} actifs`} color="success" variant="outlined" />
-                <Chip label={`${stats.suspended} suspendus`} color="error" variant="outlined" />
-            </Stack>
+            <StatsBar items={[
+                { label: `${stats.total} comptes` },
+                { label: `${stats.active} actifs`, color: 'success' },
+                { label: `${stats.suspended} suspendus`, color: 'error' },
+            ]} />
 
-            {/* DataGrid */}
-            <Paper elevation={0} sx={{ height: 560 }}>
-                <DataGrid
-                    rows={users ?? []}
-                    columns={columns}
-                    aria-label="Tableau des utilisateurs"
-                    initialState={{
-                        sorting: { sortModel: [{ field: 'fullName', sort: 'asc' }] },
-                        pagination: { paginationModel: { pageSize: 10 } },
-                    }}
-                    pageSizeOptions={[10, 25]}
-                    disableRowSelectionOnClick
-                    sx={{
-                        border: 'none',
-                        '& .MuiDataGrid-columnHeaders': {
-                            bgcolor: 'action.hover',
-                            fontWeight: 600,
-                        },
-                        '& .MuiDataGrid-cell': {
-                            display: 'flex',
-                            alignItems: 'center',
-                        },
-                    }}
-                />
-            </Paper>
+            <FilterBar
+                filters={[
+                    { label: 'Rôle', value: roleFilter, onChange: setRoleFilter, options: ROLE_OPTIONS },
+                    { label: 'Statut', value: statusFilter, onChange: setStatusFilter, options: STATUS_OPTIONS },
+                ]}
+                resultCount={filteredUsers.length}
+                resultLabel="utilisateur"
+            />
+
+            <DataTable
+                rows={filteredUsers}
+                columns={columns}
+                ariaLabel="Tableau des utilisateurs"
+                defaultSort={{ field: 'fullName', sort: 'asc' }}
+                pageSizeOptions={[10, 25]}
+            />
 
             {/* Create User Dialog */}
             <Dialog

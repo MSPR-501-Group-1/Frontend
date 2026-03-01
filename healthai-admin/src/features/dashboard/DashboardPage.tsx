@@ -1,12 +1,13 @@
 import { Typography, Box, Grid } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
-import KPICard from '@/components/dashboard/KPICard';
 import ActivityLineChart from '@/components/dashboard/ActivityLineChart';
 import SourcesPieChart from '@/components/dashboard/SourcesPieChart';
 import AnomaliesBarChart from '@/components/dashboard/AnomaliesBarChart';
 import DataIngestionAreaChart from '@/components/dashboard/DataIngestionAreaChart';
 import AnomalyTrendChart from '@/components/dashboard/AnomalyTrendChart';
-import { LoadingState, ErrorState, ExportButton } from '@/components/feedback';
+import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
+import { KPIGrid } from '@/components/shared';
+import type { KPIGridItem } from '@/components/shared';
 import type { ExportColumn } from '@/lib/export.utils';
 import { fetchDashboardData } from '@/services/dashboard.service';
 
@@ -46,39 +47,27 @@ export default function DashboardPage() {
         { field: 'status', headerName: 'Statut' },
     ];
 
+    const kpiItems: KPIGridItem[] = kpis.map((kpi) => ({
+        ...kpi,
+        to: KPI_DRILLDOWN_ROUTES[kpi.id],
+    }));
+
     return (
         <Box>
-            {/* Page title */}
-            <Typography variant="h4" sx={{ mb: 1 }}>
-                Dashboard
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <Typography color="text.secondary" sx={{ flexGrow: 1 }}>
-                    Vue d'ensemble des indicateurs clés — HealthAI Coach
-                </Typography>
-                <ExportButton
-                    fileName="dashboard-kpis"
-                    title="Dashboard — Indicateurs Clés"
-                    columns={kpiExportColumns}
-                    rows={kpis as unknown as Record<string, unknown>[]}
-                />
-            </Box>
+            <PageHeader
+                title="Dashboard"
+                subtitle="Vue d'ensemble des indicateurs clés — HealthAI Coach"
+                actions={
+                    <ExportButton
+                        fileName="dashboard-kpis"
+                        title="Dashboard — Indicateurs Clés"
+                        columns={kpiExportColumns}
+                        rows={kpis as unknown as Record<string, unknown>[]}
+                    />
+                }
+            />
 
-            {/* KPI Cards */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-                {kpis.map((kpi) => (
-                    <Grid key={kpi.id} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
-                        <KPICard
-                            label={kpi.label}
-                            value={kpi.value}
-                            unit={kpi.unit}
-                            trend={kpi.trend}
-                            status={kpi.status}
-                            to={KPI_DRILLDOWN_ROUTES[kpi.id]}
-                        />
-                    </Grid>
-                ))}
-            </Grid>
+            <KPIGrid items={kpiItems} columns={{ xs: 12, sm: 6, md: 4, lg: 2 }} />
 
             {/* Section: Tendances */}
             <Typography variant="h5" sx={{ mb: 2 }}>

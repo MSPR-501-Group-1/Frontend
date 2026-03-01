@@ -5,8 +5,9 @@ import {
     PieChart, Pie, Cell, Legend,
     BarChart, Bar,
 } from 'recharts';
-import KPICard from '@/components/dashboard/KPICard';
 import DateRangeSelector from '@/components/analytics/DateRangeSelector';
+import { PageHeader } from '@/components/feedback';
+import { KPIGrid } from '@/components/shared';
 import { useDateRange } from '@/hooks/useDateRange';
 import {
     AXIS_TICK_STYLE, AXIS_LINE_STYLE, GRID_STROKE, GRID_DASH,
@@ -61,31 +62,13 @@ export default function AnalyticsPageLayout({
 
     return (
         <Box>
-            {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-                <Box>
-                    <Typography variant="h4">{title}</Typography>
-                    <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                        {subtitle}
-                    </Typography>
-                </Box>
-                <DateRangeSelector value={range} onChange={setRange} />
-            </Box>
+            <PageHeader
+                title={title}
+                subtitle={subtitle}
+                actions={<DateRangeSelector value={range} onChange={setRange} />}
+            />
 
-            {/* KPI Cards */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-                {data.kpis.map((kpi) => (
-                    <Grid key={kpi.id} size={{ xs: 12, sm: 6, md: 3 }}>
-                        <KPICard
-                            label={kpi.label}
-                            value={kpi.value}
-                            unit={kpi.unit}
-                            trend={kpi.trend}
-                            status={kpi.status}
-                        />
-                    </Grid>
-                ))}
-            </Grid>
+            <KPIGrid items={data.kpis} />
 
             {/* Main time series chart */}
             <Card sx={{ p: 2.5, mb: 3 }}>

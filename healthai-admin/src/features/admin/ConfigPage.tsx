@@ -22,7 +22,10 @@ import {
     WarningAmber as WarningIcon,
     Error as ErrorIcon,
 } from '@mui/icons-material';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
+import { DataTable } from '@/components/shared';
+import { formatNumber } from '@/lib/formatters';
+import { SOURCE_LABELS } from '@/lib/labels.constants';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchSystemConfig,
@@ -37,13 +40,7 @@ import type { ValidationRule, AlertThreshold } from '@/types';
 
 // ─── Display config (SRP) ───────────────────────────────────
 
-const SOURCE_LABELS: Record<DataSource, string> = {
-    [DataSource.NUTRITION]: 'Nutrition',
-    [DataSource.EXERCISES]: 'Exercices',
-    [DataSource.USER_PROFILES]: 'Profils utilisateur',
-    [DataSource.FITNESS_TRACKER]: 'Fitness Tracker',
-    [DataSource.BIOMETRIC]: 'Biométrique',
-};
+
 
 const RULE_TYPE_LABELS: Record<string, string> = {
     range: 'Plage',
@@ -145,13 +142,13 @@ export default function ConfigPage() {
             field: 'minValue',
             headerName: 'Min',
             width: 80,
-            valueFormatter: (v: number | undefined) => v !== undefined ? v.toLocaleString('fr-FR') : '—',
+            valueFormatter: (v: number | undefined) => v !== undefined ? formatNumber(v) : '—',
         },
         {
             field: 'maxValue',
             headerName: 'Max',
             width: 80,
-            valueFormatter: (v: number | undefined) => v !== undefined ? v.toLocaleString('fr-FR') : '—',
+            valueFormatter: (v: number | undefined) => v !== undefined ? formatNumber(v) : '—',
         },
         {
             field: 'pattern',
@@ -195,29 +192,15 @@ export default function ConfigPage() {
                 Définissez les plages de valeurs acceptables pour chaque indicateur de santé.
                 Les données hors plage seront signalées comme anomalies.
             </Typography>
-            <Paper elevation={0} sx={{ height: 440, mb: 4 }}>
-                <DataGrid
+            <Box sx={{ mb: 4 }}>
+                <DataTable
                     rows={config.validationRules}
                     columns={ruleColumns}
-                    aria-label="Tableau des règles de validation physiologique"
-                    initialState={{
-                        pagination: { paginationModel: { pageSize: 10 } },
-                    }}
+                    ariaLabel="Tableau des règles de validation physiologique"
+                    height={440}
                     pageSizeOptions={[10, 25]}
-                    disableRowSelectionOnClick
-                    sx={{
-                        border: 'none',
-                        '& .MuiDataGrid-columnHeaders': {
-                            bgcolor: 'action.hover',
-                            fontWeight: 600,
-                        },
-                        '& .MuiDataGrid-cell': {
-                            display: 'flex',
-                            alignItems: 'center',
-                        },
-                    }}
                 />
-            </Paper>
+            </Box>
 
             {/* ── Section 2: Alert Thresholds ── */}
             <Typography variant="h5" sx={{ mb: 2 }}>
