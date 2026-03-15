@@ -17,7 +17,7 @@
  */
 
 import { Paper } from '@mui/material';
-import { DataGrid, type GridColDef, type GridSortItem } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridSortModel } from '@mui/x-data-grid';
 import { EmptyState } from '@/components/feedback';
 import {
     DATAGRID_SX,
@@ -35,7 +35,7 @@ interface DataTableProps<R extends { id: string | number }> {
     /** Accessible label for the table. */
     ariaLabel: string;
     /** Default sort model (first render). */
-    defaultSort?: GridSortItem;
+    defaultSort?: GridSortModel[number];
     /** Default page size. @default 10 */
     defaultPageSize?: number;
     /** Page-size options. @default [10, 25, 50] */
