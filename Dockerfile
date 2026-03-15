@@ -9,6 +9,9 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Copy only package manifests first for better layer caching (DRY: install once)
 COPY healthai-admin/package.json healthai-admin/package-lock.json* ./
 
@@ -33,6 +36,16 @@ RUN printf 'server {\n\
     server_name _;\n\
     root /usr/share/nginx/html;\n\
     index index.html;\n\
+    \n\
+    # Reverse proxy for API requests\n\
+    location /api/ {\n\
+    proxy_pass http://backend:3000/;\n\
+    proxy_http_version 1.1;\n\
+    proxy_set_header Host $host;\n\
+    proxy_set_header X-Real-IP $remote_addr;\n\
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+    proxy_set_header X-Forwarded-Proto $scheme;\n\
+    }\n\
     \n\
     # SPA: redirect all non-file requests to index.html\n\
     location / {\n\
