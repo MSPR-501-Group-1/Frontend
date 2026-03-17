@@ -13,7 +13,7 @@ import { DataSource } from '@/types';
 
 const SOURCES = Object.values(DataSource);
 const STATUSES: PipelineStatus[] = ['success', 'success', 'success', 'success', 'failed', 'running', 'pending'];
-const TRIGGERS = ['scheduler', 'admin@healthai.fr', 'data@healthai.fr', 'scheduler', 'scheduler'];
+const TRIGGERS = ['scheduler', 'admin@healthapp.com', 'alice.martin@email.com', 'scheduler', 'scheduler'];
 
 function pick<T>(arr: readonly T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];

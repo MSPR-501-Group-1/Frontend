@@ -15,8 +15,8 @@ import { Visibility, VisibilityOff, LocalHospital } from '@mui/icons-material';
 import { useAuthStore } from '@/stores/auth.store';
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('admin@healthai.fr');
-    const [password, setPassword] = useState('password');
+    const [email, setEmail] = useState('admin@healthapp.com');
+    const [password, setPassword] = useState('AdminPass!');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
 
@@ -124,12 +124,12 @@ export default function LoginPage() {
                             <strong>Comptes de démonstration</strong>
                         </Typography>
                         <Typography variant="caption" color="text.secondary" component="div">
-                            <strong>Admin :</strong> admin@healthai.fr<br />
-                            <strong>Data Engineer :</strong> data@healthai.fr<br />
-                            <strong>Product Owner :</strong> po@healthai.fr<br />
-                            <strong>Direction :</strong> direction@healthai.fr<br />
-                            <strong>Partenaire B2B :</strong> partner@healthai.fr<br />
-                            Mot de passe : <em>password</em>
+                            <strong>ADMIN :</strong> admin@healthapp.com<br />
+                            <strong>PREMIUM :</strong> alice.martin@email.com<br />
+                            <strong>FREEMIUM :</strong> bob.dupont@email.com<br />
+                            <strong>PREMIUM_PLUS :</strong> claire.leroy@email.com<br />
+                            <strong>B2B :</strong> david.petit@email.com<br />
+                            Mot de passe mock : <em>libre (non vérifié en mode mock)</em>
                         </Typography>
                     </Alert>
                 </CardContent>

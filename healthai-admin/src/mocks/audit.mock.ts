@@ -11,11 +11,11 @@ import type { AuditLog, AuditAction } from '@/types';
 // ─── Seed helpers ───────────────────────────────────────────
 
 const USERS = [
-    'admin@healthai.fr',
-    'data@healthai.fr',
-    'po@healthai.fr',
-    'direction@healthai.fr',
-    'partner@healthai.fr',
+    'admin@healthapp.com',
+    'alice.martin@email.com',
+    'bob.dupont@email.com',
+    'claire.leroy@email.com',
+    'david.petit@email.com',
 ];
 
 const ACTIONS: AuditAction[] = [
@@ -46,7 +46,7 @@ function detailForAction(action: AuditAction, user: string): { detail: string; t
             target: 'users',
         }),
         update_role: () => ({
-            detail: `Rôle mis à jour : data_engineer → admin`,
+            detail: `Rôle mis à jour : FREEMIUM → PREMIUM`,
             target: `user:${user}`,
         }),
         correct_anomaly: () => ({

@@ -90,7 +90,7 @@ export default function Sidebar({ open, width, collapsedWidth, onToggle, variant
     /** Sections filtered by current user's role */
     const visibleSections = useMemo(() => {
         if (!user) return [];
-        return NAV_SECTIONS.filter((section) => isRoleAllowed(user.role, section.roles));
+        return NAV_SECTIONS.filter((section) => isRoleAllowed(user.role_type, section.roles));
     }, [user]);
 
     const toggleSection = (key: string) => {
@@ -182,7 +182,7 @@ export default function Sidebar({ open, width, collapsedWidth, onToggle, variant
                 {user && open && (
                     <Box sx={{ px: 2, py: 1.5 }}>
                         <Chip
-                            label={ROLE_LABELS[user.role]}
+                            label={ROLE_LABELS[user.role_type]}
                             size="small"
                             color="primary"
                             variant="outlined"
@@ -232,7 +232,7 @@ export default function Sidebar({ open, width, collapsedWidth, onToggle, variant
 
                         // Filter children by role
                         const visibleChildren = user
-                            ? group.children.filter((c) => isRoleAllowed(user.role, c.roles))
+                            ? group.children.filter((c) => isRoleAllowed(user.role_type, c.roles))
                             : [];
 
                         if (visibleChildren.length === 0) return null;

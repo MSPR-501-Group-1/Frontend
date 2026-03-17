@@ -20,7 +20,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-001',
         field: 'heart_rate',
-        source: DataSource.BIOMETRIC,
+        source: DataSource.USER_WEARABLES,
         type: 'range',
         minValue: 30,
         maxValue: 220,
@@ -30,7 +30,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-002',
         field: 'calories_daily',
-        source: DataSource.NUTRITION,
+        source: DataSource.OPEN_FOOD_FACTS,
         type: 'range',
         minValue: 500,
         maxValue: 8000,
@@ -40,7 +40,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-003',
         field: 'steps_daily',
-        source: DataSource.FITNESS_TRACKER,
+        source: DataSource.USER_WEARABLES,
         type: 'range',
         minValue: 0,
         maxValue: 100_000,
@@ -50,7 +50,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-004',
         field: 'weight_kg',
-        source: DataSource.USER_PROFILES,
+        source: DataSource.USER_WEARABLES,
         type: 'range',
         minValue: 20,
         maxValue: 300,
@@ -60,7 +60,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-005',
         field: 'bmi',
-        source: DataSource.BIOMETRIC,
+        source: DataSource.USER_WEARABLES,
         type: 'range',
         minValue: 10,
         maxValue: 60,
@@ -70,7 +70,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-006',
         field: 'blood_pressure_systolic',
-        source: DataSource.BIOMETRIC,
+        source: DataSource.USER_WEARABLES,
         type: 'range',
         minValue: 70,
         maxValue: 250,
@@ -80,7 +80,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-007',
         field: 'sleep_hours',
-        source: DataSource.FITNESS_TRACKER,
+        source: DataSource.USER_WEARABLES,
         type: 'range',
         minValue: 0,
         maxValue: 24,
@@ -90,7 +90,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-008',
         field: 'glucose_mg_dl',
-        source: DataSource.BIOMETRIC,
+        source: DataSource.WHO_NUTRITION_DB,
         type: 'range',
         minValue: 20,
         maxValue: 600,
@@ -100,7 +100,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-009',
         field: 'email',
-        source: DataSource.USER_PROFILES,
+        source: DataSource.USER_WEARABLES,
         type: 'pattern',
         pattern: '^[\\w.-]+@[\\w.-]+\\.\\w{2,}$',
         enabled: true,
@@ -109,7 +109,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     {
         id: 'vr-010',
         field: 'exercise_duration',
-        source: DataSource.EXERCISES,
+        source: DataSource.EXERCISE_DB,
         type: 'range',
         minValue: 1,
         maxValue: 480,

@@ -5,8 +5,8 @@
  * Will be deleted once the real backend is integrated.
  */
 
-import { format, subDays, subHours } from 'date-fns';
-import type { AdminUser } from '@/types';
+import { format, subDays } from 'date-fns';
+import type { AdminUser, CreateUserPayload } from '@/types';
 import { UserRole } from '@/types';
 
 // ─── Seed helpers ───────────────────────────────────────────
@@ -21,124 +21,94 @@ const now = new Date();
 
 const SEED: AdminUser[] = [
     {
-        id: '1',
-        email: 'admin@healthai.fr',
-        firstName: 'Marie',
-        lastName: 'Dupont',
-        role: UserRole.ADMIN,
-        status: 'active',
-        createdAt: format(subDays(now, 365), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subHours(now, 1), "yyyy-MM-dd'T'HH:mm:ss"),
+        user_id: 'USR_001',
+        email: 'alice.martin@email.com',
+        first_name: 'Alice',
+        last_name: 'Martin',
+        role_type: UserRole.PREMIUM,
+        is_active: true,
+        created_at: format(subDays(now, 365), "yyyy-MM-dd'T'HH:mm:ss"),
     },
     {
-        id: '2',
-        email: 'data@healthai.fr',
-        firstName: 'Lucas',
-        lastName: 'Martin',
-        role: UserRole.DATA_ENGINEER,
-        status: 'active',
-        createdAt: format(subDays(now, 280), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subHours(now, 3), "yyyy-MM-dd'T'HH:mm:ss"),
+        user_id: 'USR_002',
+        email: 'bob.dupont@email.com',
+        first_name: 'Bob',
+        last_name: 'Dupont',
+        role_type: UserRole.FREEMIUM,
+        is_active: true,
+        created_at: format(subDays(now, 280), "yyyy-MM-dd'T'HH:mm:ss"),
     },
     {
-        id: '3',
-        email: 'direction@healthai.fr',
-        firstName: 'Sophie',
-        lastName: 'Bernard',
-        role: UserRole.DIRECTION,
-        status: 'active',
-        createdAt: format(subDays(now, 200), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subDays(now, 2), "yyyy-MM-dd'T'HH:mm:ss"),
+        user_id: 'USR_003',
+        email: 'claire.leroy@email.com',
+        first_name: 'Claire',
+        last_name: 'Leroy',
+        role_type: UserRole.PREMIUM_PLUS,
+        is_active: true,
+        created_at: format(subDays(now, 200), "yyyy-MM-dd'T'HH:mm:ss"),
     },
     {
-        id: '4',
-        email: 'po@healthai.fr',
-        firstName: 'Thomas',
-        lastName: 'Lefort',
-        role: UserRole.PRODUCT_OWNER,
-        status: 'active',
-        createdAt: format(subDays(now, 150), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subHours(now, 12), "yyyy-MM-dd'T'HH:mm:ss"),
+        user_id: 'USR_004',
+        email: 'david.petit@email.com',
+        first_name: 'David',
+        last_name: 'Petit',
+        role_type: UserRole.B2B,
+        is_active: true,
+        created_at: format(subDays(now, 150), "yyyy-MM-dd'T'HH:mm:ss"),
     },
     {
-        id: '5',
-        email: 'partner@healthai.fr',
-        firstName: 'Claire',
-        lastName: 'Moreau',
-        role: UserRole.B2B_PARTNER,
-        status: 'active',
-        createdAt: format(subDays(now, 90), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subDays(now, 5), "yyyy-MM-dd'T'HH:mm:ss"),
+        user_id: 'USR_005',
+        email: 'emma.blanc@email.com',
+        first_name: 'Emma',
+        last_name: 'Blanc',
+        role_type: UserRole.PREMIUM,
+        is_active: true,
+        created_at: format(subDays(now, 90), "yyyy-MM-dd'T'HH:mm:ss"),
     },
     {
-        id: '6',
-        email: 'jean.petit@healthai.fr',
-        firstName: 'Jean',
-        lastName: 'Petit',
-        role: UserRole.DATA_ENGINEER,
-        status: 'inactive',
-        createdAt: format(subDays(now, 400), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subDays(now, 60), "yyyy-MM-dd'T'HH:mm:ss"),
+        user_id: 'USR_006',
+        email: 'francois.noir@email.com',
+        first_name: 'Francois',
+        last_name: 'Noir',
+        role_type: UserRole.FREEMIUM,
+        is_active: false,
+        created_at: format(subDays(now, 400), "yyyy-MM-dd'T'HH:mm:ss"),
     },
     {
-        id: '7',
-        email: 'anne.garcia@healthai.fr',
-        firstName: 'Anne',
-        lastName: 'Garcia',
-        role: UserRole.PRODUCT_OWNER,
-        status: 'suspended',
-        createdAt: format(subDays(now, 300), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subDays(now, 30), "yyyy-MM-dd'T'HH:mm:ss"),
+        user_id: 'USR_007',
+        email: 'admin@healthapp.com',
+        first_name: 'Admin',
+        last_name: 'System',
+        role_type: UserRole.ADMIN,
+        is_active: true,
+        created_at: format(subDays(now, 500), "yyyy-MM-dd'T'HH:mm:ss"),
     },
     {
-        id: '8',
-        email: 'paul.roux@healthai.fr',
-        firstName: 'Paul',
-        lastName: 'Roux',
-        role: UserRole.DIRECTION,
-        status: 'active',
-        createdAt: format(subDays(now, 120), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subHours(now, 6), "yyyy-MM-dd'T'HH:mm:ss"),
+        user_id: 'USR_008',
+        email: 'lea.simon@email.com',
+        first_name: 'Lea',
+        last_name: 'Simon',
+        role_type: UserRole.PREMIUM_PLUS,
+        is_active: true,
+        created_at: format(subDays(now, 120), "yyyy-MM-dd'T'HH:mm:ss"),
     },
     {
-        id: '9',
-        email: 'emma.faure@healthai.fr',
-        firstName: 'Emma',
-        lastName: 'Faure',
-        role: UserRole.B2B_PARTNER,
-        status: 'active',
-        createdAt: format(subDays(now, 45), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subDays(now, 1), "yyyy-MM-dd'T'HH:mm:ss"),
+        user_id: 'USR_009',
+        email: 'marc.henry@email.com',
+        first_name: 'Marc',
+        last_name: 'Henry',
+        role_type: UserRole.B2B,
+        is_active: true,
+        created_at: format(subDays(now, 45), "yyyy-MM-dd'T'HH:mm:ss"),
     },
     {
-        id: '10',
-        email: 'hugo.blanc@healthai.fr',
-        firstName: 'Hugo',
-        lastName: 'Blanc',
-        role: UserRole.DATA_ENGINEER,
-        status: 'active',
-        createdAt: format(subDays(now, 60), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subHours(now, 2), "yyyy-MM-dd'T'HH:mm:ss"),
-    },
-    {
-        id: '11',
-        email: 'lea.simon@healthai.fr',
-        firstName: 'Léa',
-        lastName: 'Simon',
-        role: UserRole.ADMIN,
-        status: 'inactive',
-        createdAt: format(subDays(now, 500), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: format(subDays(now, 90), "yyyy-MM-dd'T'HH:mm:ss"),
-    },
-    {
-        id: '12',
-        email: 'marc.henry@healthai.fr',
-        firstName: 'Marc',
-        lastName: 'Henry',
-        role: UserRole.B2B_PARTNER,
-        status: 'suspended',
-        createdAt: format(subDays(now, 180), "yyyy-MM-dd'T'HH:mm:ss"),
-        lastLogin: null,
+        user_id: 'USR_010',
+        email: 'hugo.blanc@email.com',
+        first_name: 'Hugo',
+        last_name: 'Blanc',
+        role_type: UserRole.PREMIUM,
+        is_active: true,
+        created_at: format(subDays(now, 60), "yyyy-MM-dd'T'HH:mm:ss"),
     },
 ];
 
@@ -150,19 +120,33 @@ export const usersMock = {
         return [...SEED];
     },
 
-    async createUser(payload: { email: string; firstName: string; lastName: string; role: import('@/types').UserRole }): Promise<AdminUser> {
+    async createUser(payload: CreateUserPayload): Promise<AdminUser> {
         await delay(300, 600);
+
+        const nextId = String(SEED.length + 1).padStart(3, '0');
         const newUser: AdminUser = {
-            id: String(SEED.length + 1),
+            user_id: `USR_${nextId}`,
             email: payload.email,
-            firstName: payload.firstName,
-            lastName: payload.lastName,
-            role: payload.role,
-            status: 'active',
-            createdAt: new Date().toISOString(),
-            lastLogin: null,
+            first_name: payload.first_name,
+            last_name: payload.last_name,
+            role_type: payload.role_type,
+            is_active: true,
+            created_at: new Date().toISOString(),
         };
         SEED.push(newUser);
         return { ...newUser };
+    },
+
+    async updateUserRole(userId: string, role_type: UserRole): Promise<AdminUser> {
+        await delay(200, 450);
+        const index = SEED.findIndex((user) => user.user_id === userId);
+        if (index === -1) throw new Error(`Utilisateur ${userId} introuvable`);
+
+        SEED[index] = {
+            ...SEED[index],
+            role_type,
+        };
+
+        return { ...SEED[index] };
     },
 };

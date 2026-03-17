@@ -62,10 +62,10 @@ export default function Topbar({ drawerWidth, showMenuButton = false, onMenuClic
                         </IconButton>
                     </Tooltip>
                     <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-                        {user?.firstName} {user?.lastName}
+                        {user?.first_name} {user?.last_name}
                     </Typography>
                     <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                        {user?.firstName?.[0]}
+                        {user?.first_name?.[0]}
                     </Avatar>
                     <Tooltip title="Se déconnecter">
                         <IconButton aria-label="Se déconnecter" onClick={logout}>

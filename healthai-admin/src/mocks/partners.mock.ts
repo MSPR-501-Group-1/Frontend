@@ -24,7 +24,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-001',
         name: 'FitClub Lyon',
-        type: 'gym',
+        type: 'GYM',
         status: 'active',
         contractStart: '2025-03-01',
         contractEnd: '2026-03-01',
@@ -36,7 +36,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-002',
         name: 'AXA Prévoyance',
-        type: 'insurance',
+        type: 'COMPANY',
         status: 'active',
         contractStart: '2025-01-15',
         contractEnd: '2027-01-15',
@@ -48,7 +48,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-003',
         name: 'MutualSanté',
-        type: 'mutual',
+        type: 'MUTUAL',
         status: 'active',
         contractStart: '2025-06-01',
         contractEnd: '2026-06-01',
@@ -60,7 +60,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-004',
         name: 'Wellness Corp',
-        type: 'corporate_wellness',
+        type: 'COMPANY',
         status: 'active',
         contractStart: '2025-09-01',
         contractEnd: '2026-09-01',
@@ -72,7 +72,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-005',
         name: 'SportPlus Paris',
-        type: 'gym',
+        type: 'GYM',
         status: 'trial',
         contractStart: '2026-01-10',
         contractEnd: '2026-04-10',
@@ -84,7 +84,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-006',
         name: 'Allianz Santé',
-        type: 'insurance',
+        type: 'COMPANY',
         status: 'active',
         contractStart: '2025-04-01',
         contractEnd: '2027-04-01',
@@ -96,7 +96,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-007',
         name: 'Harmonie Mutuelle',
-        type: 'mutual',
+        type: 'MUTUAL',
         status: 'suspended',
         contractStart: '2025-02-15',
         contractEnd: '2026-02-15',
@@ -108,7 +108,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-008',
         name: 'VitalFit Bordeaux',
-        type: 'gym',
+        type: 'GYM',
         status: 'churned',
         contractStart: '2024-11-01',
         contractEnd: '2025-11-01',
@@ -120,7 +120,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-009',
         name: 'MAIF Prévention',
-        type: 'insurance',
+        type: 'COMPANY',
         status: 'active',
         contractStart: '2025-07-01',
         contractEnd: '2027-07-01',
@@ -132,7 +132,7 @@ const PARTNERS: Partner[] = [
     {
         id: 'p-010',
         name: 'Zenith Bien-être',
-        type: 'corporate_wellness',
+        type: 'NGO',
         status: 'trial',
         contractStart: '2026-02-01',
         contractEnd: '2026-05-01',
@@ -151,10 +151,11 @@ const usageByPartner: CategoryDataPoint[] = PARTNERS
     .map((p) => ({ name: p.name, value: p.apiCallsMonth }));
 
 const TYPE_COLORS: Record<string, string> = {
-    gym: '#7C3AED',
-    insurance: '#2563EB',
-    mutual: '#16A34A',
-    corporate_wellness: '#F59E0B',
+    COMPANY: '#2563EB',
+    GYM: '#7C3AED',
+    MUTUAL: '#16A34A',
+    NGO: '#F59E0B',
+    OTHER: '#6B7280',
 };
 
 const partnerTypesBreakdown: CategoryDataPoint[] = (() => {
@@ -163,10 +164,11 @@ const partnerTypesBreakdown: CategoryDataPoint[] = (() => {
         counts[p.type] = (counts[p.type] || 0) + 1;
     }
     const labels: Record<string, string> = {
-        gym: 'Salles de sport',
-        insurance: 'Assurances',
-        mutual: 'Mutuelles',
-        corporate_wellness: 'Bien-être entreprise',
+        COMPANY: 'Entreprises',
+        GYM: 'Salles de sport',
+        MUTUAL: 'Mutuelles',
+        NGO: 'ONG',
+        OTHER: 'Autres',
     };
     return Object.entries(counts).map(([type, count]) => ({
         name: labels[type] || type,

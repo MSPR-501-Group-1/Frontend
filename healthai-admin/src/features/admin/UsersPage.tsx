@@ -18,27 +18,26 @@ import {
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUsers, createUser } from '@/services/users.service';
+import { fetchUsers, createUser, updateUserRole } from '@/services/users.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
-import type { AdminUser, AccountStatus, CreateUserPayload } from '@/types';
+import type { AdminUser, CreateUserPayload } from '@/types';
 import { UserRole, ROLE_LABELS } from '@/types';
 
 // ─── Display config ─────────────────────────────────────────
 
 const ROLE_COLOR: Record<UserRole, 'error' | 'warning' | 'info' | 'success' | 'default' | 'primary' | 'secondary'> = {
+    [UserRole.FREEMIUM]: 'default',
+    [UserRole.PREMIUM]: 'primary',
+    [UserRole.PREMIUM_PLUS]: 'secondary',
+    [UserRole.B2B]: 'info',
     [UserRole.ADMIN]: 'error',
-    [UserRole.DATA_ENGINEER]: 'info',
-    [UserRole.PRODUCT_OWNER]: 'warning',
-    [UserRole.DIRECTION]: 'secondary',
-    [UserRole.B2B_PARTNER]: 'primary',
 };
 
-const STATUS_CONFIG: Record<AccountStatus, { label: string; color: 'success' | 'default' | 'error' }> = {
+const STATUS_CONFIG: Record<'active' | 'inactive', { label: string; color: 'success' | 'default' }> = {
     active: { label: 'Actif', color: 'success' },
     inactive: { label: 'Inactif', color: 'default' },
-    suspended: { label: 'Suspendu', color: 'error' },
 };
 
 // ─── Constants ──────────────────────────────────────────────
@@ -47,9 +46,9 @@ const USERS_KEY = ['admin-users'] as const;
 
 const EMPTY_FORM: CreateUserPayload = {
     email: '',
-    firstName: '',
-    lastName: '',
-    role: UserRole.DATA_ENGINEER,
+    first_name: '',
+    last_name: '',
+    role_type: UserRole.FREEMIUM,
 };
 
 // ─── Page ───────────────────────────────────────────────────
@@ -58,12 +57,14 @@ export default function UsersPage() {
     const queryClient = useQueryClient();
     const { notify } = useNotificationStore();
     const currentUser = useAuthStore((s) => s.user);
-    const isAdmin = currentUser?.role === UserRole.ADMIN;
+    const isAdmin = currentUser?.role_type === UserRole.ADMIN;
 
     // ── Create user dialog state ──
     const [dialogOpen, setDialogOpen] = useState(false);
     const [form, setForm] = useState<CreateUserPayload>(EMPTY_FORM);
     const [touched, setTouched] = useState(false);
+    const [managedUser, setManagedUser] = useState<AdminUser | null>(null);
+    const [managedRole, setManagedRole] = useState<UserRole>(UserRole.FREEMIUM);
 
     const { data: users, isLoading, isError } = useQuery({
         queryKey: USERS_KEY,
@@ -75,10 +76,22 @@ export default function UsersPage() {
         mutationFn: createUser,
         onSuccess: (newUser) => {
             queryClient.invalidateQueries({ queryKey: USERS_KEY });
-            notify(`Utilisateur ${newUser.firstName} ${newUser.lastName} créé avec succès`, 'success');
+            notify(`Utilisateur ${newUser.first_name} ${newUser.last_name} créé avec succès`, 'success');
             handleCloseDialog();
         },
         onError: () => notify('Erreur lors de la création de l\'utilisateur', 'error'),
+    });
+
+    const updateRoleMutation = useMutation({
+        mutationFn: ({ userId, roleType }: { userId: string; roleType: UserRole }) =>
+            updateUserRole(userId, roleType),
+        onSuccess: (updatedUser) => {
+            queryClient.invalidateQueries({ queryKey: USERS_KEY });
+            setManagedUser(updatedUser);
+            setManagedRole(updatedUser.role_type);
+            notify(`Rôle mis à jour pour ${updatedUser.first_name} ${updatedUser.last_name}`, 'success');
+        },
+        onError: () => notify('Erreur lors de la mise à jour du rôle', 'error'),
     });
 
     // ── Form helpers ──
@@ -87,8 +100,8 @@ export default function UsersPage() {
     }, []);
 
     const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
-    const isFormValid = form.firstName.trim().length > 0
-        && form.lastName.trim().length > 0
+    const isFormValid = form.first_name.trim().length > 0
+        && form.last_name.trim().length > 0
         && isEmailValid;
 
     const handleOpenDialog = useCallback(() => {
@@ -103,24 +116,42 @@ export default function UsersPage() {
         setTouched(false);
     }, []);
 
+    const handleOpenManageDialog = useCallback((user: AdminUser) => {
+        setManagedUser(user);
+        setManagedRole(user.role_type);
+    }, []);
+
+    const handleCloseManageDialog = useCallback(() => {
+        setManagedUser(null);
+        setManagedRole(UserRole.FREEMIUM);
+    }, []);
+
+    const handleSaveManagedRole = useCallback(() => {
+        if (!managedUser) return;
+        updateRoleMutation.mutate({
+            userId: managedUser.user_id,
+            roleType: managedRole,
+        });
+    }, [managedUser, managedRole, updateRoleMutation]);
+
     const handleSubmit = useCallback(() => {
         setTouched(true);
         if (!isFormValid) return;
         createMutation.mutate({
             ...form,
-            firstName: form.firstName.trim(),
-            lastName: form.lastName.trim(),
+            first_name: form.first_name.trim(),
+            last_name: form.last_name.trim(),
             email: form.email.trim().toLowerCase(),
         });
     }, [form, isFormValid, createMutation]);
 
     // ── Stats ──
     const stats = useMemo(() => {
-        if (!users) return { total: 0, active: 0, suspended: 0 };
+        if (!users) return { total: 0, active: 0, inactive: 0 };
         return {
             total: users.length,
-            active: users.filter((u) => u.status === 'active').length,
-            suspended: users.filter((u) => u.status === 'suspended').length,
+            active: users.filter((u) => u.is_active).length,
+            inactive: users.filter((u) => !u.is_active).length,
         };
     }, [users]);
 
@@ -130,7 +161,7 @@ export default function UsersPage() {
             field: 'fullName',
             headerName: 'Nom',
             width: 180,
-            valueGetter: (_value: unknown, row: AdminUser) => `${row.firstName} ${row.lastName}`,
+            valueGetter: (_value: unknown, row: AdminUser) => `${row.first_name} ${row.last_name}`,
         },
         {
             field: 'email',
@@ -138,7 +169,7 @@ export default function UsersPage() {
             width: 220,
         },
         {
-            field: 'role',
+            field: 'role_type',
             headerName: 'Rôle',
             width: 160,
             renderCell: ({ value }) => {
@@ -154,34 +185,22 @@ export default function UsersPage() {
             },
         },
         {
-            field: 'status',
+            field: 'is_active',
             headerName: 'Statut',
             width: 120,
             renderCell: ({ value }) => {
-                const cfg = STATUS_CONFIG[value as AccountStatus];
+                const cfg = STATUS_CONFIG[(value as boolean) ? 'active' : 'inactive'];
                 return <Chip label={cfg.label} color={cfg.color} size="small" variant="outlined" />;
             },
         },
         {
-            field: 'createdAt',
+            field: 'created_at',
             headerName: 'Créé le',
             width: 130,
             valueFormatter: (value: string) =>
                 new Date(value).toLocaleDateString('fr-FR', {
                     day: '2-digit', month: '2-digit', year: 'numeric',
                 }),
-        },
-        {
-            field: 'lastLogin',
-            headerName: 'Dernière connexion',
-            width: 160,
-            valueFormatter: (value: string | null) => {
-                if (!value) return 'Jamais';
-                return new Date(value).toLocaleString('fr-FR', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit',
-                });
-            },
         },
         ...(isAdmin
             ? [{
@@ -190,14 +209,14 @@ export default function UsersPage() {
                 width: 120,
                 sortable: false,
                 filterable: false,
-                renderCell: () => (
-                    <Button size="small" variant="outlined">
+                renderCell: ({ row }: { row: AdminUser }) => (
+                    <Button size="small" variant="outlined" onClick={() => handleOpenManageDialog(row)}>
                         Gérer
                     </Button>
                 ),
             }]
             : []),
-    ], [isAdmin]);
+    ], [isAdmin, handleOpenManageDialog]);
 
     // ── Loading / Error ──
     if (isLoading) return <LoadingState />;
@@ -225,13 +244,14 @@ export default function UsersPage() {
             <Stack direction="row" spacing={1.5} sx={{ mb: 3 }}>
                 <Chip label={`${stats.total} comptes`} variant="outlined" />
                 <Chip label={`${stats.active} actifs`} color="success" variant="outlined" />
-                <Chip label={`${stats.suspended} suspendus`} color="error" variant="outlined" />
+                <Chip label={`${stats.inactive} inactifs`} color="default" variant="outlined" />
             </Stack>
 
             {/* DataGrid */}
             <Paper elevation={0} sx={{ height: 560 }}>
                 <DataGrid
                     rows={users ?? []}
+                    getRowId={(row) => row.user_id}
                     columns={columns}
                     aria-label="Tableau des utilisateurs"
                     initialState={{
@@ -268,19 +288,19 @@ export default function UsersPage() {
                         <Stack direction="row" spacing={2}>
                             <TextField
                                 label="Prénom"
-                                value={form.firstName}
-                                onChange={(e) => updateField('firstName', e.target.value)}
-                                error={touched && form.firstName.trim().length === 0}
-                                helperText={touched && form.firstName.trim().length === 0 ? 'Obligatoire' : ''}
+                                value={form.first_name}
+                                onChange={(e) => updateField('first_name', e.target.value)}
+                                error={touched && form.first_name.trim().length === 0}
+                                helperText={touched && form.first_name.trim().length === 0 ? 'Obligatoire' : ''}
                                 required
                                 fullWidth
                             />
                             <TextField
                                 label="Nom"
-                                value={form.lastName}
-                                onChange={(e) => updateField('lastName', e.target.value)}
-                                error={touched && form.lastName.trim().length === 0}
-                                helperText={touched && form.lastName.trim().length === 0 ? 'Obligatoire' : ''}
+                                value={form.last_name}
+                                onChange={(e) => updateField('last_name', e.target.value)}
+                                error={touched && form.last_name.trim().length === 0}
+                                helperText={touched && form.last_name.trim().length === 0 ? 'Obligatoire' : ''}
                                 required
                                 fullWidth
                             />
@@ -301,9 +321,9 @@ export default function UsersPage() {
                         <FormControl fullWidth required>
                             <InputLabel>Rôle</InputLabel>
                             <Select
-                                value={form.role}
+                                value={form.role_type}
                                 label="Rôle"
-                                onChange={(e) => updateField('role', e.target.value as UserRole)}
+                                onChange={(e) => updateField('role_type', e.target.value as UserRole)}
                             >
                                 {Object.values(UserRole).map((role) => (
                                     <MenuItem key={role} value={role}>
@@ -329,6 +349,93 @@ export default function UsersPage() {
                         disabled={createMutation.isPending || (touched && !isFormValid)}
                     >
                         {createMutation.isPending ? 'Création…' : 'Créer le compte'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Manage User Dialog */}
+            <Dialog
+                open={Boolean(managedUser)}
+                onClose={handleCloseManageDialog}
+                maxWidth="sm"
+                fullWidth
+                aria-labelledby="manage-user-dialog"
+            >
+                <DialogTitle id="manage-user-dialog">Gérer l'utilisateur</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2.5} sx={{ pt: 1 }}>
+                        <TextField
+                            label="Identifiant"
+                            value={managedUser?.user_id ?? ''}
+                            InputProps={{ readOnly: true }}
+                            fullWidth
+                        />
+                        <TextField
+                            label="Email"
+                            value={managedUser?.email ?? ''}
+                            InputProps={{ readOnly: true }}
+                            fullWidth
+                        />
+                        <Stack direction="row" spacing={2}>
+                            <TextField
+                                label="Prénom"
+                                value={managedUser?.first_name ?? ''}
+                                InputProps={{ readOnly: true }}
+                                fullWidth
+                            />
+                            <TextField
+                                label="Nom"
+                                value={managedUser?.last_name ?? ''}
+                                InputProps={{ readOnly: true }}
+                                fullWidth
+                            />
+                        </Stack>
+                        <Stack direction="row" spacing={1.5}>
+                            <Chip
+                                label={ROLE_LABELS[managedRole]}
+                                color={ROLE_COLOR[managedRole]}
+                                size="small"
+                            />
+                            <Chip
+                                label={managedUser?.is_active ? 'Actif' : 'Inactif'}
+                                color={managedUser?.is_active ? 'success' : 'default'}
+                                size="small"
+                                variant="outlined"
+                            />
+                        </Stack>
+
+                        <FormControl fullWidth>
+                            <InputLabel id="manage-user-role-label">Rôle</InputLabel>
+                            <Select
+                                labelId="manage-user-role-label"
+                                value={managedRole}
+                                label="Rôle"
+                                onChange={(e) => setManagedRole(e.target.value as UserRole)}
+                            >
+                                {Object.values(UserRole).map((role) => (
+                                    <MenuItem key={role} value={role}>
+                                        <Chip
+                                            label={ROLE_LABELS[role]}
+                                            color={ROLE_COLOR[role]}
+                                            size="small"
+                                            sx={{ fontWeight: 600 }}
+                                        />
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button onClick={handleCloseManageDialog} disabled={updateRoleMutation.isPending}>
+                        Fermer
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSaveManagedRole}
+                        disabled={!managedUser || managedRole === managedUser.role_type || updateRoleMutation.isPending}
+                    >
+                        {updateRoleMutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
                     </Button>
                 </DialogActions>
             </Dialog>

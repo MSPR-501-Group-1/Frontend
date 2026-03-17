@@ -35,11 +35,11 @@ const STATUS_CONFIG: Record<PipelineStatus, {
 };
 
 const SOURCE_LABELS: Record<DataSource, string> = {
-    [DataSource.NUTRITION]: 'Nutrition',
-    [DataSource.EXERCISES]: 'Exercices',
-    [DataSource.USER_PROFILES]: 'Profils utilisateur',
-    [DataSource.FITNESS_TRACKER]: 'Fitness Tracker',
-    [DataSource.BIOMETRIC]: 'Biométrique',
+    [DataSource.OPEN_FOOD_FACTS]: 'OpenFoodFacts',
+    [DataSource.WHO_NUTRITION_DB]: 'WHO Nutrition DB',
+    [DataSource.EXERCISE_DB]: 'ExerciseDB',
+    [DataSource.USER_WEARABLES]: 'User Wearables',
+    [DataSource.ANSES_CIQUAL]: 'ANSES CIQUAL',
 };
 
 function formatDuration(seconds: number): string {

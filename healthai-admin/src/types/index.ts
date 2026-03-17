@@ -1,30 +1,30 @@
 // User roles for RBAC
 export enum UserRole {
-    ADMIN = 'admin',
-    DATA_ENGINEER = 'data_engineer',
-    PRODUCT_OWNER = 'product_owner',
-    DIRECTION = 'direction',
-    B2B_PARTNER = 'b2b_partner',
+    FREEMIUM = 'FREEMIUM',
+    PREMIUM = 'PREMIUM',
+    PREMIUM_PLUS = 'PREMIUM_PLUS',
+    B2B = 'B2B',
+    ADMIN = 'ADMIN',
 }
 
 // Role labels (i18n-ready)
 export const ROLE_LABELS: Record<UserRole, string> = {
+    [UserRole.FREEMIUM]: 'Freemium',
+    [UserRole.PREMIUM]: 'Premium',
+    [UserRole.PREMIUM_PLUS]: 'Premium+',
+    [UserRole.B2B]: 'B2B',
     [UserRole.ADMIN]: 'Administrateur',
-    [UserRole.DATA_ENGINEER]: 'Data Engineer',
-    [UserRole.PRODUCT_OWNER]: 'Product Owner',
-    [UserRole.DIRECTION]: 'Direction',
-    [UserRole.B2B_PARTNER]: 'Partenaire B2B',
 };
 
 // ─── Pipeline / Validation enums ────────────────────────────
 
 /** Sources de données du pipeline ETL */
 export enum DataSource {
-    NUTRITION = 'nutrition',
-    EXERCISES = 'exercises',
-    USER_PROFILES = 'user_profiles',
-    FITNESS_TRACKER = 'fitness_tracker',
-    BIOMETRIC = 'biometric',
+    OPEN_FOOD_FACTS = 'OPEN_FOOD_FACTS',
+    WHO_NUTRITION_DB = 'WHO_NUTRITION_DB',
+    EXERCISE_DB = 'EXERCISE_DB',
+    USER_WEARABLES = 'USER_WEARABLES',
+    ANSES_CIQUAL = 'ANSES_CIQUAL',
 }
 
 /** Statuts du workflow de validation des données */
@@ -46,11 +46,11 @@ export enum ExportFormat {
 
 // Basic user type
 export interface User {
-    id: string;
+    user_id: string;
     email: string;
-    firstName: string;
-    lastName: string;
-    role: UserRole;
+    first_name: string;
+    last_name: string;
+    role_type: UserRole;
     avatar?: string;
 }
 
@@ -189,25 +189,22 @@ export interface PipelineRun {
 
 // ─── Admin User models ──────────────────────────────────────
 
-export type AccountStatus = 'active' | 'inactive' | 'suspended';
-
 export interface AdminUser {
-    id: string;
+    user_id: string;
     email: string;
-    firstName: string;
-    lastName: string;
-    role: UserRole;
-    status: AccountStatus;
-    createdAt: string;
-    lastLogin: string | null;
+    first_name: string;
+    last_name: string;
+    role_type: UserRole;
+    is_active: boolean;
+    created_at: string;
 }
 
 /** Payload for creating a new admin user account */
 export interface CreateUserPayload {
     email: string;
-    firstName: string;
-    lastName: string;
-    role: UserRole;
+    first_name: string;
+    last_name: string;
+    role_type: UserRole;
 }
 
 // ─── Business KPI page models ───────────────────────────────
@@ -222,14 +219,15 @@ export interface BusinessPageData {
 
 // ─── Partners B2B models ────────────────────────────────────
 
-export type PartnerType = 'gym' | 'insurance' | 'mutual' | 'corporate_wellness';
+export type PartnerType = 'COMPANY' | 'GYM' | 'MUTUAL' | 'NGO' | 'OTHER';
 export type PartnerStatus = 'active' | 'trial' | 'suspended' | 'churned';
 
 export const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
-    gym: 'Salle de sport',
-    insurance: 'Assurance',
-    mutual: 'Mutuelle',
-    corporate_wellness: 'Bien-être entreprise',
+    COMPANY: 'Entreprise',
+    GYM: 'Salle de sport',
+    MUTUAL: 'Mutuelle',
+    NGO: 'ONG',
+    OTHER: 'Autre',
 };
 
 export const PARTNER_STATUS_LABELS: Record<PartnerStatus, string> = {

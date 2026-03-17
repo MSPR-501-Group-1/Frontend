@@ -25,7 +25,7 @@ interface RequireRoleProps extends Props {
 export function RequireRole({ children, roles }: RequireRoleProps) {
     const user = useAuthStore((s) => s.user);
 
-    if (!user || !roles.includes(user.role)) {
+    if (!user || !roles.includes(user.role_type)) {
         return <Navigate to="/403" replace />;
     }
 

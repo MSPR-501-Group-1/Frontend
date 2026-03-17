@@ -141,7 +141,7 @@ export const router = createBrowserRouter([
             {
                 path: 'analytics/business',
                 element: (
-                    <RequireRole roles={[UserRole.ADMIN, UserRole.PRODUCT_OWNER, UserRole.DIRECTION]}>
+                    <RequireRole roles={[UserRole.ADMIN, UserRole.PREMIUM_PLUS, UserRole.B2B]}>
                         <Page><BusinessPage /></Page>
                     </RequireRole>
                 ),

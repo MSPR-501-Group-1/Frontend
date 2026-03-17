@@ -26,11 +26,11 @@ function pick<T>(arr: readonly T[]): T {
 // ─── Source labels (DRY: reused across mock generators) ─────
 
 const SOURCE_FILE_PREFIX: Record<DataSource, string> = {
-    [DataSource.NUTRITION]: 'nutrition',
-    [DataSource.EXERCISES]: 'exercises',
-    [DataSource.USER_PROFILES]: 'user_profiles',
-    [DataSource.FITNESS_TRACKER]: 'fitness_tracker',
-    [DataSource.BIOMETRIC]: 'biometric',
+    [DataSource.OPEN_FOOD_FACTS]: 'openfoodfacts',
+    [DataSource.WHO_NUTRITION_DB]: 'who_nutrition_db',
+    [DataSource.EXERCISE_DB]: 'exercise_db',
+    [DataSource.USER_WEARABLES]: 'user_wearables',
+    [DataSource.ANSES_CIQUAL]: 'anses_ciqual',
 };
 
 // ─── Batch dataset ──────────────────────────────────────────
