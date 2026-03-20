@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Drawer,
     List,
+    ListItem,
     ListItemButton,
     ListItemIcon,
     ListItemText,
@@ -200,28 +201,26 @@ export default function Sidebar({ open, width, collapsedWidth, onToggle, variant
                         if (!isGroup(section)) {
                             const leaf = section as NavLeafSection;
                             return (
-                                <Tooltip
-                                    key={section.key}
-                                    title={!open ? section.label : ''}
-                                    placement="right"
-                                >
-                                    <ListItemButton
-                                        selected={isActivePath(leaf.path)}
-                                        onClick={() => navigate(leaf.path)}
-                                        sx={{
-                                            ...activeItemSx,
-                                            minHeight: 44,
-                                            justifyContent: open ? 'initial' : 'center',
-                                        }}
-                                    >
-                                        <ListItemIcon
-                                            sx={{ minWidth: open ? 40 : 'unset', justifyContent: 'center' }}
+                                <ListItem key={section.key} disablePadding>
+                                    <Tooltip title={!open ? section.label : ''} placement="right">
+                                        <ListItemButton
+                                            selected={isActivePath(leaf.path)}
+                                            onClick={() => navigate(leaf.path)}
+                                            sx={{
+                                                ...activeItemSx,
+                                                minHeight: 44,
+                                                justifyContent: open ? 'initial' : 'center',
+                                            }}
                                         >
-                                            {icon}
-                                        </ListItemIcon>
-                                        {open && <ListItemText primary={section.label} />}
-                                    </ListItemButton>
-                                </Tooltip>
+                                            <ListItemIcon
+                                                sx={{ minWidth: open ? 40 : 'unset', justifyContent: 'center' }}
+                                            >
+                                                {icon}
+                                            </ListItemIcon>
+                                            {open && <ListItemText primary={section.label} />}
+                                        </ListItemButton>
+                                    </Tooltip>
+                                </ListItem>
                             );
                         }
 
@@ -238,7 +237,7 @@ export default function Sidebar({ open, width, collapsedWidth, onToggle, variant
                         if (visibleChildren.length === 0) return null;
 
                         return (
-                            <Box key={section.key}>
+                            <ListItem key={section.key} disablePadding sx={{ display: 'block' }}>
                                 {/* Section header */}
                                 <Tooltip title={!open ? section.label : ''} placement="right">
                                     <ListItemButton
@@ -278,22 +277,23 @@ export default function Sidebar({ open, width, collapsedWidth, onToggle, variant
                                 <Collapse in={open && isExpanded} timeout="auto" unmountOnExit>
                                     <List disablePadding>
                                         {visibleChildren.map((child) => (
-                                            <ListItemButton
-                                                key={child.path}
-                                                selected={isActivePath(child.path)}
-                                                onClick={() => navigate(child.path)}
-                                                sx={{ ...activeItemSx, pl: 4 }}
-                                            >
-                                                <ListItemIcon sx={{ minWidth: 32 }} />
-                                                <ListItemText
-                                                    primary={child.label}
-                                                    primaryTypographyProps={{ variant: 'body2' }}
-                                                />
-                                            </ListItemButton>
+                                            <ListItem key={child.path} disablePadding>
+                                                <ListItemButton
+                                                    selected={isActivePath(child.path)}
+                                                    onClick={() => navigate(child.path)}
+                                                    sx={{ ...activeItemSx, pl: 4 }}
+                                                >
+                                                    <ListItemIcon sx={{ minWidth: 32 }} />
+                                                    <ListItemText
+                                                        primary={child.label}
+                                                        primaryTypographyProps={{ variant: 'body2' }}
+                                                    />
+                                                </ListItemButton>
+                                            </ListItem>
                                         ))}
                                     </List>
                                 </Collapse>
-                            </Box>
+                            </ListItem>
                         );
                     })}
                 </List>

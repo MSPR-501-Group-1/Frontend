@@ -87,7 +87,7 @@ export default function AnalyticsPageLayout({
             {/* Main time series chart */}
             <Card sx={{ p: 2.5, mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 2 }}>
-                    <Typography variant="h6">{chartConfig.label}</Typography>
+                    <Typography variant="h6" component="p">{chartConfig.label}</Typography>
                     <Typography variant="body2" color="text.secondary">
                         Moyenne : {avg.toLocaleString('fr-FR')}{chartConfig.yAxisUnit ? ` ${chartConfig.yAxisUnit}` : ''}
                     </Typography>
@@ -167,7 +167,7 @@ export default function AnalyticsPageLayout({
 function BreakdownPieChart({ data, title }: { data: CategoryDataPoint[]; title: string }) {
     return (
         <Card sx={{ p: 2.5, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>{title}</Typography>
+            <Typography variant="h6" component="p" sx={{ mb: 2 }}>{title}</Typography>
             <Box sx={{ width: '100%', height: 300 }} role="img" aria-label={title}>
                 <ResponsiveContainer>
                     <PieChart>
@@ -207,7 +207,7 @@ function BreakdownPieChart({ data, title }: { data: CategoryDataPoint[]; title: 
 function DistributionBarChart({ data, title }: { data: CategoryDataPoint[]; title: string }) {
     return (
         <Card sx={{ p: 2.5, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>{title}</Typography>
+            <Typography variant="h6" component="p" sx={{ mb: 2 }}>{title}</Typography>
             <Box sx={{ width: '100%', height: 300 }} role="img" aria-label={title}>
                 <ResponsiveContainer>
                     <BarChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>

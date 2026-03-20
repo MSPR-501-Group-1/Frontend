@@ -56,6 +56,7 @@ type StatusFilter = 'all' | PipelineStatus;
 
 export default function PipelinePage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+    const statusFilterLabelId = 'pipeline-status-filter-label';
 
     const { data: runs, isLoading, isError } = useQuery({
         queryKey: ['pipeline-runs'],
@@ -178,8 +179,9 @@ export default function PipelinePage() {
             {/* Filter */}
             <FilterBar resultCount={filteredRows.length} resultLabel="exécution">
                 <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel>Statut</InputLabel>
+                    <InputLabel id={statusFilterLabelId}>Statut</InputLabel>
                     <Select
+                        labelId={statusFilterLabelId}
                         value={statusFilter}
                         label="Statut"
                         onChange={(e: SelectChangeEvent) => setStatusFilter(e.target.value as StatusFilter)}

@@ -22,7 +22,7 @@ export default function ForbiddenPage() {
             <Typography variant="h3" fontWeight={700} gutterBottom>
                 403
             </Typography>
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                 Accès refusé — vous n'avez pas les permissions nécessaires.
             </Typography>
             <Button variant="contained" onClick={() => navigate('/')}>
