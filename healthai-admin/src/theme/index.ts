@@ -14,7 +14,7 @@ const sharedPalette = {
         dark: '#5B21B6',
     },
     info: { main: '#0288D1', contrastText: '#FFFFFF' },
-    success: { main: '#166534' },
+    success: { main: '#22C55E', contrastText: '#0B2E13' },
     warning: { main: '#F59E0B', contrastText: '#1F2937' },
     error: { main: '#DC2626' },
 };

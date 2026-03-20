@@ -10,7 +10,7 @@ import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import ScoreGauge from '@/components/data-quality/ScoreGauge';
 import DimensionCard from '@/components/data-quality/DimensionCard';
 import { TOOLTIP_STYLE, GRID_DASH } from '@/lib/chart.constants';
-import { scoreToLabel, scoreToStatus, STATUS_HEX } from '@/lib/status.utils';
+import { scoreToLabel, scoreToStatus, STATUS_MUI_COLOR } from '@/lib/status.utils';
 
 // ─── History chart (co-located — only used here) ────────────
 
@@ -94,7 +94,7 @@ export default function DataQualityPage() {
                         label={scoreToLabel(data.overall)}
                         size="small"
                         sx={(theme) => {
-                            const tone = STATUS_HEX[scoreToStatus(data.overall)];
+                            const tone = theme.palette[STATUS_MUI_COLOR[scoreToStatus(data.overall)]].main;
                             return {
                                 fontWeight: 700,
                                 bgcolor: tone,
