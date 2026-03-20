@@ -29,6 +29,7 @@ export default function ScoreGauge({ score, size = 160, thickness = 6 }: ScoreGa
                 value={100}
                 size={size}
                 thickness={thickness}
+                aria-hidden
                 sx={{ color: 'grey.200' }}
             />
             {/* Foreground arc */}
@@ -37,6 +38,7 @@ export default function ScoreGauge({ score, size = 160, thickness = 6 }: ScoreGa
                 value={score}
                 size={size}
                 thickness={thickness}
+                aria-label={`Progression du score de qualité : ${score} sur 100`}
                 sx={{
                     color,
                     position: 'absolute',

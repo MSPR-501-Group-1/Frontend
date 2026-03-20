@@ -10,7 +10,7 @@ import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import ScoreGauge from '@/components/data-quality/ScoreGauge';
 import DimensionCard from '@/components/data-quality/DimensionCard';
 import { TOOLTIP_STYLE, GRID_DASH } from '@/lib/chart.constants';
-import { scoreToLabel, scoreToStatus, STATUS_MUI_COLOR } from '@/lib/status.utils';
+import { scoreToLabel, scoreToStatus, STATUS_HEX } from '@/lib/status.utils';
 
 // ─── History chart (co-located — only used here) ────────────
 
@@ -93,8 +93,14 @@ export default function DataQualityPage() {
                     <Chip
                         label={scoreToLabel(data.overall)}
                         size="small"
-                        color={STATUS_MUI_COLOR[scoreToStatus(data.overall)]}
-                        sx={{ fontWeight: 600 }}
+                        sx={(theme) => {
+                            const tone = STATUS_HEX[scoreToStatus(data.overall)];
+                            return {
+                                fontWeight: 700,
+                                bgcolor: tone,
+                                color: theme.palette.getContrastText(tone),
+                            };
+                        }}
                     />
                 </Paper>
 
@@ -108,7 +114,7 @@ export default function DataQualityPage() {
             </Box>
 
             {/* Dimensions grid */}
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" component="p" gutterBottom>
                 Scores par dimension
             </Typography>
             <Box

@@ -35,12 +35,17 @@ export default function DimensionCard({ label, score, description, status }: Dim
                 <Chip
                     label={`${score}%`}
                     size="small"
-                    sx={{ fontWeight: 700, bgcolor: `${color}18`, color }}
+                    sx={(theme) => ({
+                        fontWeight: 700,
+                        bgcolor: color,
+                        color: theme.palette.getContrastText(color),
+                    })}
                 />
             </Box>
             <LinearProgress
                 variant="determinate"
                 value={score}
+                aria-label={`Progression de ${label} : ${score} sur 100`}
                 sx={{
                     height: 8,
                     borderRadius: 4,

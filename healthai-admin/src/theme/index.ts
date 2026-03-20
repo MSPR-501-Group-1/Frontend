@@ -13,8 +13,9 @@ const sharedPalette = {
         light: '#A78BFA',
         dark: '#5B21B6',
     },
+    info: { main: '#0288D1', contrastText: '#FFFFFF' },
     success: { main: '#166534' },
-    warning: { main: '#F59E0B' },
+    warning: { main: '#F59E0B', contrastText: '#1F2937' },
     error: { main: '#DC2626' },
 };
 
@@ -29,6 +30,23 @@ const sharedOptions: ThemeOptions = {
         borderRadius: 8,
     },
     components: {
+        MuiTypography: {
+            defaultProps: {
+                variantMapping: {
+                    h1: 'h1',
+                    h2: 'h2',
+                    h3: 'h3',
+                    h4: 'h4',
+                    h5: 'h5',
+                    h6: 'h6',
+                    subtitle1: 'p',
+                    subtitle2: 'p',
+                    body1: 'p',
+                    body2: 'p',
+                    inherit: 'p',
+                },
+            },
+        },
         MuiButton: {
             styleOverrides: {
                 root: { textTransform: 'none', fontWeight: 600 },
@@ -104,6 +122,22 @@ function withHighContrast(options: ThemeOptions): ThemeOptions {
             background: {
                 default: '#FFFFFF',
                 paper: '#FFFFFF',
+            },
+            success: {
+                main: '#0A5A1A',
+                contrastText: '#FFFFFF',
+            },
+            warning: {
+                main: '#7A4A00',
+                contrastText: '#FFFFFF',
+            },
+            error: {
+                main: '#9B111E',
+                contrastText: '#FFFFFF',
+            },
+            info: {
+                main: '#004A99',
+                contrastText: '#FFFFFF',
             },
             action: {
                 hover: '#EDEDED',
