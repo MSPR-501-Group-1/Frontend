@@ -1,249 +1,402 @@
-# Lighthouse A11y Operations Manual (HealthAI Admin)
+# Lighthouse Accessibility Runbook
 
-This file is the long-term operating manual for Lighthouse accessibility batch audits.
+Version: 1.2
+Scope: HealthAI Admin - audits Lighthouse accessibilite
 
-## Scope
+Ce document est la reference operationnelle pour executer les audits a11y de facon fiable, en local et en CI.
 
-- Frontend app: `frontend/healthai-admin`
-- Runner script: `healthai-admin/scripts/run-lighthouse-batch.mjs`
-- Output root: `frontend/lighthouse/a11y-batch-reports`
-- Routes manifest: `healthai-admin/scripts/lighthouse-routes.json`
-- Auth profiles: `healthai-admin/scripts/lighthouse-auth-profiles.json`
-- Bootstrap template: `healthai-admin/scripts/lighthouse-auth-bootstrap.template.html`
+## Sommaire
 
-## Important Warning About This Setup
+1. [Objectif](#1-objectif)
+2. [Pre-requis](#2-pre-requis)
+3. [Configuration a maintenir](#3-configuration-a-maintenir)
+4. [Commandes standards](#4-commandes-standards)
+5. [Arguments npm et node (detail)](#5-arguments-npm-et-node-detail)
+6. [Procedure recommandee](#6-procedure-recommandee)
+7. [Lire les resultats](#7-lire-les-resultats)
+8. [Depannage rapide](#8-depannage-rapide)
+9. [Regles de securite](#9-regles-de-securite)
 
-This setup is intentionally atypical.
+## 1. Objectif
 
-Why:
-- It injects a simulated authenticated session from audit tooling.
-- It is designed for deterministic local/CI accessibility runs, not product authentication.
+Produire des rapports Lighthouse accessibilite reproductibles sur les routes publiques et protegees de l application.
 
-Risks if misunderstood:
-- Treating audit session simulation as real security.
-- Reusing audit profile conventions outside the audit pipeline.
-- Breaking audits when auth store shape changes.
+Le runbook couvre:
 
-Rule:
-- Keep this mechanism strictly limited to Lighthouse automation.
+- execution des audits
+- parametrage des profils et des routes
+- interpretation des sorties
 
-## Architecture And Service Responsibilities
+Le runbook ne couvre pas:
 
-### 1) Frontend runtime service (Docker `frontend`)
+- authentification produit reelle
+- performance Lighthouse
 
-Purpose:
-- Serves static React build on `http://localhost:5173`.
-- Exposes `/api/*` reverse proxy to backend.
+## 2. Pre-requis
 
-Must be true:
-- Port 5173 reachable from host.
-- SPA routing fallback enabled.
-- Build contains app routes listed in routes manifest.
+### Outils
 
-### 2) Backend service (Docker `backend`)
+- Docker + Docker Compose
+- Node.js 22+
+- npm
 
-Purpose for Lighthouse:
-- Serves API requests needed by pages during audit.
+### Emplacement des commandes
 
-Must be true:
-- Backend healthy at `/health`.
-- API base path reachable from frontend (`/api`).
+- commandes Docker: racine projet
+- commandes Lighthouse: frontend/healthai-admin
 
-### 3) Lighthouse runner (`run-lighthouse-batch.mjs`)
+### Verification minimale avant audit
 
-Purpose:
-- Builds test URLs.
-- Generates temporary bootstrap page in `public/`.
-- Runs Lighthouse per route.
-- Generates summary artifacts and latest pointers.
+Depuis la racine projet:
 
-Must be true:
-- Node dependencies available in `healthai-admin`.
-- Script can create and remove temporary bootstrap file.
-- Write permission on output directory.
+```powershell
+docker compose -f docker-compose.yml up -d --build frontend
+docker compose -f docker-compose.yml ps
+```
 
-### 4) Bootstrap template (`lighthouse-auth-bootstrap.template.html`)
+Depuis frontend/healthai-admin:
 
-Purpose:
-- Reads query params for target route, UI mode and simulated auth payload.
-- Writes `sessionStorage` (`healthai-auth`) and `localStorage` (`healthai-ui`).
-- Redirects to target route.
+```powershell
+npm ci
+npm run audit:a11y:normal:dry
+```
 
-Must be true:
-- Only used locally (`localhost` / `127.0.0.1`).
-- Not committed as a permanent public page artifact.
+Si le dry-run passe, la configuration est exploitable.
 
-## Configuration Matrix (What Goes Where)
+## 3. Configuration a maintenir
 
-### A) Route coverage
+### Routes d audit
 
-File:
-- `scripts/lighthouse-routes.json`
+Fichier: scripts/lighthouse-routes.json
 
-Content contract:
-- `public`: array of routes without auth simulation.
-- `protected`: array of routes with auth simulation.
+- public: routes sans session simulee
+- protected: routes avec session simulee
 
-Update rule:
-- Any new page in navigation/routing must be reflected here.
+Regles:
 
-### B) Audit auth identities
+- chaque route commence par /
+- pas de doublons
+- toute nouvelle page doit etre ajoutee
 
-File:
-- `scripts/lighthouse-auth-profiles.json`
+### Profils d audit
 
-Content contract:
-- `defaultProfile`: key in `profiles`.
-- `profiles.<name>.user`: must include `user_id`, `email`, `first_name`, `last_name`, `role_type`.
-- `profiles.<name>.tokenPrefix`: prefix for generated mock token.
+Fichier: scripts/lighthouse-auth-profiles.json
 
-Update rule:
-- Keep only audit personas used for route permissions.
-- Do not place real credentials in this file.
+Champs obligatoires pour profiles.<name>.user:
 
-### C) UI mode
+- user_id
+- email
+- first_name
+- last_name
+- role_type
 
-Provided by CLI options:
-- `--ui-theme=light|dark`
-- `--ui-high-contrast=true|false`
+Regles:
 
-Usage rule:
-- Normal visual checks: `ui-high-contrast=false`.
-- Accessibility compliance checks: `ui-high-contrast=true`.
+- defaultProfile doit pointer vers un profil existant
+- pas de secrets reels dans ce fichier
 
-### D) Session lifetime
+## 4. Commandes standards
 
-Provided by CLI option:
-- `--auth-ttl-sec=<seconds>`
+Toutes les commandes de cette section s executent dans frontend/healthai-admin.
 
-Default:
-- `900`
+### 4.1 Audit complet (par defaut)
 
-Usage rule:
-- Keep short-lived values in CI (5 to 15 minutes).
+```powershell
+npm run audit:a11y
+```
 
-## NPM Commands (Standard Entry Points)
+Usage:
 
-- Full audit (default):
-  - `npm run audit:a11y`
-- Full audit normal mode:
-  - `npm run audit:a11y:normal`
-- Dry run normal mode:
-  - `npm run audit:a11y:normal:dry`
-- Full audit high-contrast mode:
-  - `npm run audit:a11y:hc`
-- Dry run high-contrast mode:
-  - `npm run audit:a11y:hc:dry`
+- controle global des routes configurees
 
-## Advanced CLI Options
+Sortie attendue:
 
-Direct command:
-- `node scripts/run-lighthouse-batch.mjs [options]`
+- creation d un dossier de run
+- creation de summary.json, summary.md et latest.json
 
-Options:
-- `--dry-run`
-- `--base-url=<url>` default `http://localhost:5173`
-- `--chrome-flags="<flags>"` default `--headless=new --disable-gpu --no-sandbox`
-- `--ui-high-contrast=<true|false>` default `false`
-- `--ui-theme=<light|dark>` default `light`
-- `--auth-profile=<profileName>` default from `defaultProfile`
-- `--auth-profiles-file=<path>` default `scripts/lighthouse-auth-profiles.json`
-- `--auth-ttl-sec=<seconds>` default `900`
-- `--routes-manifest=<path>` default `scripts/lighthouse-routes.json`
-- `--only-routes=/route1,/route2`
-- `--out-dir=<path>` default `../lighthouse/a11y-batch-reports`
-- `--run-id=<label>` default timestamp `YYYYMMDD-HHmmss`
+### 4.2 Audit normal
 
-## Windows / PowerShell Notes
+```powershell
+npm run audit:a11y:normal
+```
 
-Because of argument forwarding limitations with `npm run -- ...` on Windows:
-- Prefer env vars for simple route filters.
-- Prefer direct `node ...` for advanced flags.
+### 4.3 Audit high contrast
 
-Examples:
-- `$env:A11Y_ONLY_ROUTES='/data/quality,/403'; npm run audit:a11y:hc`
-- `Remove-Item Env:A11Y_ONLY_ROUTES`
-- `node scripts/run-lighthouse-batch.mjs --ui-high-contrast=true --auth-profile=admin --only-routes=/admin/audit --dry-run`
+```powershell
+npm run audit:a11y:hc
+```
 
-## Output Contract
+### 4.4 Dry-run
 
-Per run:
-- Folder: `YYYYMMDD-HHmmss_<theme>-<mode>-<profile>/`
-- Route reports: `public_<route>.json`, `auth_<route>.json`
-- Summaries: `summary.json`, `summary.md`
+```powershell
+npm run audit:a11y:hc:dry
+```
 
-Global latest pointers:
-- `latest.json`
-- `latest/summary.json`
-- `latest/summary.md`
+### 4.5 Ciblage de routes via variable d environnement
 
-`summary` contains:
-- base URL
-- chrome flags
-- UI theme
-- high contrast status
-- auth profile
-- auth session TTL
-- run id
-- score and failed audits per route
+```powershell
+$env:A11Y_ONLY_ROUTES='/data/quality,/403'
+npm run audit:a11y:hc
+Remove-Item Env:A11Y_ONLY_ROUTES
+```
 
-## Runbook (Operational Procedure)
+### 4.6 Commande avancee directe
 
-1. Start stack:
-   - `docker compose -f docker-compose.yml up -d --build frontend`
-2. Dry-run first:
-   - `npm run audit:a11y:hc:dry`
-3. Targeted real run:
-   - `$env:A11Y_ONLY_ROUTES='/login,/403'; npm run audit:a11y:hc; Remove-Item Env:A11Y_ONLY_ROUTES`
-4. Read latest pointers:
-   - `Get-Content ../lighthouse/a11y-batch-reports/latest.json`
-   - `Get-Content ../lighthouse/a11y-batch-reports/latest/summary.json`
+```powershell
+node scripts/run-lighthouse-batch.mjs --ui-high-contrast=true --auth-profile=admin --run-id=sprint-12-a11y
+```
 
-## Maintenance Checklist (Every Sprint)
+## 5. Arguments npm et node (detail)
 
-1. Validate routes manifest matches real app routes.
-2. Validate auth profiles still satisfy route guards.
-3. Run one targeted high-contrast audit to confirm bootstrap flow.
-4. Confirm temporary bootstrap cleanup works (file absent after run).
-5. Confirm `latest.json` points to a valid run directory.
-6. Confirm no generated report artifacts are accidentally tracked by Git.
+Cette section decrit les arguments disponibles dans le script node scripts/run-lighthouse-batch.mjs.
 
-## Troubleshooting
+### 5.1 Difference npm run vs node direct
 
-### Symptom: unknown route in `--only-routes`
+- npm run audit:a11y:hc: lance un preset defini dans package.json
+- node scripts/run-lighthouse-batch.mjs ...: donne le controle complet sur les options
+
+Conseil:
+
+- usage equipe: npm run pour rester standard
+- usage debug/CI avance: node direct
+
+### 5.2 Arguments CLI du script node
+
+1. --dry-run
+- type: flag
+- defaut: false
+- role: affiche les commandes Lighthouse sans generer de rapports
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --dry-run
+```
+
+2. --base-url=<url>
+- type: string
+- defaut: http://localhost:5173
+- role: URL de base de l application a auditer
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --base-url=http://localhost:5173
+```
+
+3. --chrome-flags="<flags>"
+- type: string
+- defaut: --headless=new --disable-gpu --no-sandbox
+- role: options de lancement Chrome pour Lighthouse
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --chrome-flags="--headless=new --disable-gpu --no-sandbox"
+```
+
+4. --ui-high-contrast=true|false
+- type: booleen
+- defaut: false
+- role: force le mode contraste eleve dans le contexte d audit
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --ui-high-contrast=true
+```
+
+5. --ui-theme=light|dark
+- type: string
+- defaut: light
+- role: theme UI applique pendant l audit
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --ui-theme=dark
+```
+
+6. --auth-profile=<nom>
+- type: string
+- defaut: defaultProfile du fichier auth profiles
+- role: profil utilisateur simule utilise pour les routes protegees
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --auth-profile=admin
+```
+
+7. --auth-profiles-file=<path>
+- type: string
+- defaut: scripts/lighthouse-auth-profiles.json
+- role: chemin vers un fichier de profils alternatif
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --auth-profiles-file=scripts/lighthouse-auth-profiles.json
+```
+
+8. --auth-ttl-sec=<seconds>
+- type: entier
+- defaut: 900
+- role: duree de validite de la session simulee
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --auth-ttl-sec=600
+```
+
+9. --routes-manifest=<path>
+- type: string
+- defaut: scripts/lighthouse-routes.json
+- role: fichier de routes a auditer
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --routes-manifest=scripts/lighthouse-routes.json
+```
+
+10. --only-routes=/r1,/r2
+- type: liste CSV
+- defaut: toutes les routes du manifest
+- role: limite le run a certaines routes
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --only-routes=/login,/admin/audit
+```
+
+11. --out-dir=<path>
+- type: string
+- defaut: ../lighthouse/a11y-batch-reports
+- role: dossier de sortie des rapports
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --out-dir=../lighthouse/a11y-batch-reports
+```
+
+12. --run-id=<label>
+- type: string
+- defaut: timestamp genere automatiquement
+- role: identifiant du run (traçabilite CI)
+- exemple:
+
+```powershell
+node scripts/run-lighthouse-batch.mjs --run-id=sprint-12-a11y-hc
+```
+
+### 5.3 Variables d environnement supportees
+
+Ces variables peuvent remplacer les arguments CLI:
+
+- A11Y_ONLY_ROUTES
+- A11Y_UI_HIGH_CONTRAST
+- A11Y_UI_THEME
+- A11Y_AUTH_TTL_SEC
+- A11Y_AUTH_PROFILE
+- A11Y_RUN_ID
+
+Exemple PowerShell:
+
+```powershell
+$env:A11Y_UI_HIGH_CONTRAST='true'
+$env:A11Y_AUTH_PROFILE='admin'
+npm run audit:a11y
+Remove-Item Env:A11Y_UI_HIGH_CONTRAST
+Remove-Item Env:A11Y_AUTH_PROFILE
+```
+
+## 6. Procedure recommandee
+
+1. Demarrer le frontend et ses dependances via Docker Compose.
+2. Executer un dry-run.
+3. Executer un run reel cible (ou complet).
+4. Lire latest.json et summary.json.
+5. Corriger les pages en echec puis relancer uniquement les routes impactees.
+
+Commandes type:
+
+```powershell
+# racine projet
+docker compose -f docker-compose.yml up -d --build frontend
+
+# frontend/healthai-admin
+npm run audit:a11y:hc:dry
+$env:A11Y_ONLY_ROUTES='/login,/admin/audit'
+npm run audit:a11y:hc
+Remove-Item Env:A11Y_ONLY_ROUTES
+```
+
+## 7. Lire les resultats
+
+Sorties generees dans:
+
+- ../lighthouse/a11y-batch-reports
+
+Structure:
+
+- dossier par run: YYYYMMDD-HHmmss_theme-mode-profile/
+- rapports route: public_<route>.json ou auth_<route>.json
+- syntheses: summary.json et summary.md
+- pointeurs courants: latest.json, latest/summary.json, latest/summary.md
+
+Lecture rapide:
+
+```powershell
+Get-Content ../lighthouse/a11y-batch-reports/latest.json
+Get-Content ../lighthouse/a11y-batch-reports/latest/summary.json
+```
+
+## 8. Depannage rapide
+
+### Erreur unknown route dans only-routes
 
 Cause:
-- Route missing from `lighthouse-routes.json`.
 
-Fix:
-- Add route to the appropriate array (`public` or `protected`).
+- route absente de scripts/lighthouse-routes.json
 
-### Symptom: route redirects to login unexpectedly
+Action:
 
-Cause:
-- Audit profile role does not satisfy route guards.
+- ajouter la route dans public ou protected
 
-Fix:
-- Use a profile with required `role_type`.
-
-### Symptom: bootstrap page blocked
+### Route protegee redirigee vers login
 
 Cause:
-- Audit not executed on localhost.
 
-Fix:
-- Ensure base URL points to `localhost` or `127.0.0.1`.
+- role du profil insuffisant
 
-### Symptom: npm ignores advanced flags on Windows
+Action:
+
+- changer --auth-profile ou adapter role_type dans le profil d audit
+
+### Arguments ignores avec npm run sous Windows
 
 Cause:
-- npm CLI argument parsing.
 
-Fix:
-- Use env vars or direct `node scripts/run-lighthouse-batch.mjs ...`.
+- forwarding npm parfois limite
 
-## Security And Delivery Notes
+Action:
 
-- Bootstrap page is generated temporarily in `public/` from template and removed after execution.
-- This mechanism must remain local/CI-only and never be treated as production auth.
-- Auth identity data is isolated in audit profile config, not hardcoded in executable HTML.
+- utiliser node scripts/run-lighthouse-batch.mjs directement
+
+### Echec de bootstrap local
+
+Cause:
+
+- base-url non local
+
+Action:
+
+- utiliser localhost ou 127.0.0.1
+
+## 9. Regles de securite
+
+- Le mecanisme de session simulee est reserve au pipeline d audit.
+- Les profils d audit ne doivent jamais contenir de credentials reels.
+- Le bootstrap temporaire ne doit pas etre conserve comme page produit.
+- Les artefacts de rapport ne doivent pas etre commit par erreur.
+
+## Checklist sprint
+
+1. Mettre a jour les routes auditees selon la navigation reelle.
+2. Verifier les profils d audit par rapport aux guards.
+3. Lancer au moins un audit high contrast cible.
+4. Valider les pointeurs latest.
+5. Verifier que les fichiers de rapports ne sont pas suivis par Git.
