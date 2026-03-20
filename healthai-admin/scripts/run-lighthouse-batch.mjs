@@ -34,7 +34,7 @@ const chromeFlags = getArg('--chrome-flags=', '--headless=new --disable-gpu --no
 const onlyRoutesArg = getArg('--only-routes=', process.env.A11Y_ONLY_ROUTES ?? '');
 const uiHighContrast = getArg('--ui-high-contrast=', process.env.A11Y_UI_HIGH_CONTRAST ?? 'false') === 'true';
 const uiTheme = getArg('--ui-theme=', process.env.A11Y_UI_THEME ?? 'light') === 'dark' ? 'dark' : 'light';
-const outDir = path.resolve(process.cwd(), getArg('--out-dir=', '../documentation/lighthouse/batch'));
+const outDir = path.resolve(process.cwd(), getArg('--out-dir=', '../lighthouse/a11y-batch-reports'));
 const onlyRoutes = new Set(
     onlyRoutesArg
         .split(',')
@@ -74,6 +74,7 @@ function runLighthouse(url, outFile) {
     const result = spawnSync(npxBin(), args, {
         stdio: 'inherit',
         shell: process.platform === 'win32',
+        cwd: outDir,
     });
     if (result.error) {
         throw new Error(`Lighthouse process error for ${url}: ${result.error.message}`);
