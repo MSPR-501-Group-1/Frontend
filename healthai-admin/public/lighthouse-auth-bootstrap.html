@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lighthouse Auth Bootstrap</title>
+</head>
+
+<body>
+    <script>
+        // Local-only helper for Lighthouse CLI audits on authenticated routes.
+        if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            document.body.textContent = 'This page is restricted to local audits.';
+            throw new Error('Restricted to localhost');
+        }
+
+        const authState = {
+            state: {
+                user: {
+                    user_id: 'USR_007',
+                    email: 'admin@healthapp.com',
+                    first_name: 'Admin',
+                    last_name: 'System',
+                    role_type: 'ADMIN'
+                },
+                token: 'mock-jwt-token',
+                isAuthenticated: true
+            },
+            version: 0
+        };
+
+        sessionStorage.setItem('healthai-auth', JSON.stringify(authState));
+
+        const params = new URLSearchParams(location.search);
+        const target = params.get('target') || '/analytics/fitness';
+        const safeTarget = target.startsWith('/') ? target : '/analytics/fitness';
+        location.replace(safeTarget);
+    </script>
+</body>
+
+</html>

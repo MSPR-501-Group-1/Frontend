@@ -71,3 +71,24 @@ export default defineConfig([
   },
 ])
 ```
+
+## Lighthouse Accessibility Audit
+
+Run the full accessibility batch audit:
+
+```bash
+npm run audit:a11y
+```
+
+Useful options:
+
+```bash
+node scripts/run-lighthouse-batch.mjs --dry-run
+node scripts/run-lighthouse-batch.mjs --base-url=http://localhost:5173
+node scripts/run-lighthouse-batch.mjs --out-dir=../documentation/lighthouse/batch
+```
+
+Generated reports:
+
+- `../documentation/lighthouse/batch/summary.json`
+- `../documentation/lighthouse/batch/summary.md`
