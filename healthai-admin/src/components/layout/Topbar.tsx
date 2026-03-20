@@ -7,7 +7,7 @@ import {
     Avatar,
     Tooltip,
 } from '@mui/material';
-import { Logout, Menu as MenuIcon, DarkMode, LightMode } from '@mui/icons-material';
+import { Logout, Menu as MenuIcon, DarkMode, LightMode, AccessibilityNew } from '@mui/icons-material';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUIStore } from '@/stores/ui.store';
 
@@ -22,7 +22,7 @@ interface TopbarProps {
 
 export default function Topbar({ drawerWidth, showMenuButton = false, onMenuClick }: TopbarProps) {
     const { user, logout } = useAuthStore();
-    const { themeMode, toggleTheme } = useUIStore();
+    const { themeMode, highContrast, toggleTheme, toggleHighContrast } = useUIStore();
 
     return (
         <AppBar
@@ -49,10 +49,19 @@ export default function Topbar({ drawerWidth, showMenuButton = false, onMenuClic
                         <MenuIcon />
                     </IconButton>
                 )}
-                <Typography variant="h6" sx={{ flexGrow: 1 }} />
+                <Box sx={{ flexGrow: 1 }} />
 
                 {/* User info */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Tooltip title={highContrast ? 'Desactiver le contraste eleve' : 'Activer le contraste eleve'}>
+                        <IconButton
+                            aria-label={highContrast ? 'Desactiver le mode contraste eleve' : 'Activer le mode contraste eleve'}
+                            onClick={toggleHighContrast}
+                            color={highContrast ? 'secondary' : 'default'}
+                        >
+                            <AccessibilityNew fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
                     <Tooltip title={themeMode === 'light' ? 'Mode sombre' : 'Mode clair'}>
                         <IconButton
                             aria-label={themeMode === 'light' ? 'Activer le mode sombre' : 'Activer le mode clair'}

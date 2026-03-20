@@ -20,7 +20,8 @@ const queryClient = new QueryClient({
 
 export default function App() {
   const themeMode = useUIStore((s) => s.themeMode)
-  const theme = getTheme(themeMode)
+  const highContrast = useUIStore((s) => s.highContrast)
+  const theme = getTheme(themeMode, highContrast)
 
   return (
     <ErrorBoundary>
