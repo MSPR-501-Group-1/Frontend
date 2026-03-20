@@ -31,7 +31,16 @@ function getArg(prefix, defaultValue) {
 const dryRun = process.argv.includes('--dry-run');
 const baseUrl = getArg('--base-url=', 'http://localhost:5173');
 const chromeFlags = getArg('--chrome-flags=', '--headless=new --disable-gpu --no-sandbox');
+const onlyRoutesArg = getArg('--only-routes=', process.env.A11Y_ONLY_ROUTES ?? '');
+const uiHighContrast = getArg('--ui-high-contrast=', process.env.A11Y_UI_HIGH_CONTRAST ?? 'false') === 'true';
+const uiTheme = getArg('--ui-theme=', process.env.A11Y_UI_THEME ?? 'light') === 'dark' ? 'dark' : 'light';
 const outDir = path.resolve(process.cwd(), getArg('--out-dir=', '../documentation/lighthouse/batch'));
+const onlyRoutes = new Set(
+    onlyRoutesArg
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+);
 
 const bootstrapPath = path.resolve(process.cwd(), 'public/lighthouse-auth-bootstrap.html');
 if (!fs.existsSync(bootstrapPath)) {
@@ -46,10 +55,11 @@ function npxBin() {
 }
 
 function runLighthouse(url, outFile) {
+    const urlArg = process.platform === 'win32' ? `"${url}"` : url;
     const args = [
         '-y',
         'lighthouse',
-        url,
+        urlArg,
         '--only-categories=accessibility',
         '--output=json',
         `--output-path=${outFile}`,
@@ -95,9 +105,10 @@ function parseReport(outFile) {
 }
 
 function routeToUrl(route, mode) {
-    if (mode === 'public') return `${baseUrl}${route}`;
     const target = encodeURIComponent(route);
-    return `${baseUrl}/lighthouse-auth-bootstrap.html?target=${target}`;
+    const auth = mode === 'auth' ? '1' : '0';
+    const highContrast = uiHighContrast ? '1' : '0';
+    return `${baseUrl}/lighthouse-auth-bootstrap.html?target=${target}&auth=${auth}&highContrast=${highContrast}&theme=${uiTheme}`;
 }
 
 const allRuns = [
@@ -105,9 +116,21 @@ const allRuns = [
     ...PROTECTED_ROUTES.map((route) => ({ route, mode: 'auth' })),
 ];
 
+const runsToExecute = onlyRoutes.size > 0
+    ? allRuns.filter((run) => onlyRoutes.has(run.route))
+    : allRuns;
+
+if (onlyRoutes.size > 0) {
+    const unknownRoutes = [...onlyRoutes].filter((route) => !allRuns.some((run) => run.route === route));
+    if (unknownRoutes.length > 0) {
+        console.error(`Unknown route(s) in --only-routes: ${unknownRoutes.join(', ')}`);
+        process.exit(1);
+    }
+}
+
 const summary = [];
 
-for (const run of allRuns) {
+for (const run of runsToExecute) {
     const outputFile = path.join(outDir, `${run.mode}_${safeName(run.route)}.json`);
     const url = routeToUrl(run.route, run.mode);
 
@@ -139,6 +162,8 @@ if (!dryRun) {
         `- Generated at: ${new Date().toISOString()}`,
         `- Base URL: ${baseUrl}`,
         `- Chrome flags: ${chromeFlags}`,
+        `- UI theme: ${uiTheme}`,
+        `- UI high contrast: ${uiHighContrast}`,
         '',
         '| Mode | Route | Score | Failed Audits |',
         '|---|---|---:|---|',

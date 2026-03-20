@@ -15,6 +15,11 @@
             throw new Error('Restricted to localhost');
         }
 
+        const params = new URLSearchParams(location.search);
+        const authEnabled = params.get('auth') !== '0';
+        const highContrast = params.get('highContrast') === '1';
+        const themeMode = params.get('theme') === 'dark' ? 'dark' : 'light';
+
         const authState = {
             state: {
                 user: {
@@ -30,9 +35,20 @@
             version: 0
         };
 
-        sessionStorage.setItem('healthai-auth', JSON.stringify(authState));
+        if (authEnabled) {
+            sessionStorage.setItem('healthai-auth', JSON.stringify(authState));
+        } else {
+            sessionStorage.removeItem('healthai-auth');
+        }
 
-        const params = new URLSearchParams(location.search);
+        localStorage.setItem('healthai-ui', JSON.stringify({
+            state: {
+                themeMode,
+                highContrast,
+            },
+            version: 0,
+        }));
+
         const target = params.get('target') || '/analytics/fitness';
         const safeTarget = target.startsWith('/') ? target : '/analytics/fitness';
         location.replace(safeTarget);

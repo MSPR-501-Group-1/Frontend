@@ -8,7 +8,11 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "audit:a11y": "node scripts/run-lighthouse-batch.mjs"
+    "audit:a11y": "node scripts/run-lighthouse-batch.mjs",
+    "audit:a11y:normal": "node scripts/run-lighthouse-batch.mjs --ui-high-contrast=false --ui-theme=light",
+    "audit:a11y:normal:dry": "node scripts/run-lighthouse-batch.mjs --ui-high-contrast=false --ui-theme=light --dry-run",
+    "audit:a11y:hc": "node scripts/run-lighthouse-batch.mjs --ui-high-contrast=true --ui-theme=light",
+    "audit:a11y:hc:dry": "node scripts/run-lighthouse-batch.mjs --ui-high-contrast=true --ui-theme=light --dry-run"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
