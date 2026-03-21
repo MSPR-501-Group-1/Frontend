@@ -6,7 +6,6 @@
 export { fetchAnomalies, correctAnomaly } from './anomalies.service';
 export { fetchDataQualityScore } from './data-quality.service';
 export { fetchDashboardData } from './dashboard.service';
-export { fetchNutritionData, fetchFitnessData, fetchBiometricData } from './analytics.service';
 export { loginUser, logoutUser } from './auth.service';
 export { fetchAuditLogs } from './audit.service';
 export { fetchUsers } from './users.service';

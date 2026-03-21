@@ -49,13 +49,40 @@ function buildUrl(path: string, params?: RequestOptions['params']): string {
 
 function getAuthToken(): string | null {
     try {
+        // 1) localStorage persisted auth (preferred)
+        const rawLocal = localStorage.getItem('healthai-auth');
+        if (rawLocal) {
+            try {
+                const state = JSON.parse(rawLocal);
+                const t1 = state?.state?.token ?? state?.token ?? state?.access_token ?? state?.token;
+                if (t1) return t1;
+            } catch { /* ignore parse error */ }
+        }
+
+        // 2) session storage legacy object { state: { token: '...' } }
         const raw = sessionStorage.getItem('healthai-auth');
-        if (!raw) return null;
-        const state = JSON.parse(raw)?.state;
-        return state?.token ?? null;
+        if (raw) {
+            try {
+                const state = JSON.parse(raw);
+                const t1 = state?.state?.token ?? state?.token;
+                if (t1) return t1;
+            } catch { /* ignore parse error */ }
+        }
+
+        // 3) direct access_token keys in session/local storage
+        const localToken = localStorage.getItem('access_token');
+        if (localToken) return localToken;
+        const sessToken = sessionStorage.getItem('access_token');
+        if (sessToken) return sessToken;
+
+        // 4) cookie fallback (access_token)
+        const m = document.cookie.match(/(?:^|; )access_token=([^;]+)/);
+        if (m) return decodeURIComponent(m[1]);
+
     } catch {
-        return null;
+        // best-effort, return null if anything goes wrong
     }
+    return null;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -70,7 +97,9 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
         // Centralised side-effects for specific HTTP codes
         if (response.status === 401) {
-            sessionStorage.removeItem('healthai-auth');
+            // Clear persisted auth (both storages) and redirect to login
+            try { localStorage.removeItem('healthai-auth'); } catch {}
+            try { sessionStorage.removeItem('healthai-auth'); } catch {}
             window.location.href = '/login';
         }
 
