@@ -1,38 +1,44 @@
-/**
- * Analytics service — fetches domain-specific analytics data.
- *
- * Provides one function per domain (nutrition, fitness, biometric).
- * Each returns an AnalyticsPageData object ready for AnalyticsPageLayout.
- */
-
 import { apiClient } from '@/api';
+import { format } from 'date-fns';
 import type { AnalyticsPageData } from '@/types';
-import { nutritionData, fitnessData, biometricData } from '@/mocks/analytics';
-import { USE_MOCK } from '@/lib/env';
 
-/** Fetch nutrition analytics. */
-export async function fetchNutritionData(): Promise<AnalyticsPageData> {
-    if (USE_MOCK) {
-        await new Promise((r) => setTimeout(r, 200 + Math.random() * 300));
-        return nutritionData;
-    }
-    return apiClient.get<AnalyticsPageData>('/analytics/nutrition');
-}
+// Fetch fitness analytics on UsersMetrics
+export async function fetchFitnessData(range?: string): Promise<AnalyticsPageData> {
+    const resp = await apiClient.get<{
+        success: boolean;
+        data: {
+            dailyMetrics: Array<{ jour: string; total_minutes: string }>;
+            averageSessionsPerWeek: string;
+            averageDuration: string;
+            distribution?: Array<{ category: string; count: number | string }>;
+        };
+    }>('/metrics/usersMetrics', { params: { range } });
 
-/** Fetch fitness analytics. */
-export async function fetchFitnessData(): Promise<AnalyticsPageData> {
-    if (USE_MOCK) {
-        await new Promise((r) => setTimeout(r, 200 + Math.random() * 300));
-        return fitnessData;
-    }
-    return apiClient.get<AnalyticsPageData>('/analytics/fitness');
-}
+    const daily = resp.data.dailyMetrics ?? [];
 
-/** Fetch biometric analytics. */
-export async function fetchBiometricData(): Promise<AnalyticsPageData> {
-    if (USE_MOCK) {
-        await new Promise((r) => setTimeout(r, 200 + Math.random() * 300));
-        return biometricData;
-    }
-    return apiClient.get<AnalyticsPageData>('/analytics/biometric');
+    const timeSeries = daily.map((d) => ({
+        date: format(new Date(d.jour), 'yyyy-MM-dd'),
+        value: Number(d.total_minutes ?? 0),
+    }));
+
+    // To be sure that the dates are in chronological order
+    timeSeries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Total minutes calculated
+    const totalMinutes = daily.reduce((s, p) => s + Number(p.total_minutes ?? 0), 0);
+
+    const kpis = [
+        { id: 'sessions-week', label: 'Sessions / semaine', value: Number(resp.data.averageSessionsPerWeek ?? 0), status: 'success' } as const,
+        { id: 'avg-duration', label: 'Durée moyenne', value: Number(resp.data.averageDuration ?? 0), unit: 'min', status: 'success' } as const,
+        { id: 'total-duration-period', label: 'Durée totale sur la période', value: totalMinutes, unit: 'min', status: 'success' } as const,
+    ] as unknown as import('@/types').BusinessKPI[];
+
+    const breakdown = (resp.data.distribution ?? []).map((d) => ({ name: d.category, value: Number(d.count) }));
+
+    return {
+        kpis,
+        timeSeries,
+        breakdown,
+        distribution: breakdown,
+    };
 }

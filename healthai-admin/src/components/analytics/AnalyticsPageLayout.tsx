@@ -1,9 +1,9 @@
 import { Typography, Box, Grid, Card } from '@mui/material';
+import { useEffect } from 'react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, ReferenceLine,
     PieChart, Pie, Cell, Legend,
-    BarChart, Bar,
 } from 'recharts';
 import KPICard from '@/components/dashboard/KPICard';
 import { PageHeader } from '@/components/feedback';
@@ -15,44 +15,36 @@ import {
     LEGEND_STYLE, LEGEND_ICON_SIZE, LEGEND_ICON_TYPE,
 } from '@/lib/chart.constants';
 import { formatShortDate, formatTooltipDate, formatWithUnit } from '@/lib/formatters';
-import type { AnalyticsPageData, CategoryDataPoint } from '@/types';
+import type { AnalyticsPageData, CategoryDataPoint, DateRange } from '@/types';
 
 interface AnalyticsPageLayoutProps {
     title: string;
     subtitle: string;
     data: AnalyticsPageData;
-    /** Main area chart config */
+    onRangeChange?: (range: DateRange) => void;
     chartConfig: {
         label: string;
         color: string;
         yAxisUnit?: string;
     };
-    /** Labels for the two bottom charts */
     breakdownTitle: string;
-    distributionTitle: string;
 }
 
-/** Reusable tooltip style alias — now sourced from shared constants. */
 const tooltipStyle = TOOLTIP_STYLE;
 
-/**
- * Shared layout template for all Analytics pages (Nutrition / Fitness / Biometric).
- *
- * Structure:
- * - Title + DateRangeSelector
- * - 4 KPI cards
- * - Main AreaChart (time series)
- * - PieChart (breakdown) + BarChart (distribution)
- */
 export default function AnalyticsPageLayout({
     title,
     subtitle,
     data,
     chartConfig,
     breakdownTitle,
-    distributionTitle,
+    onRangeChange,
 }: AnalyticsPageLayoutProps) {
     const { range, setRange, filteredData } = useDateRange(data.timeSeries);
+
+    useEffect(() => {
+        if (onRangeChange) onRangeChange(range);
+    }, [range, onRangeChange]);
 
     const gradientId = `area-${chartConfig.color.replace('#', '')}`;
     const targetValue = filteredData[0]?.target;
@@ -154,9 +146,6 @@ export default function AnalyticsPageLayout({
                 <Grid size={{ xs: 12, md: 6 }}>
                     <BreakdownPieChart data={data.breakdown} title={breakdownTitle} />
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <DistributionBarChart data={data.distribution} title={distributionTitle} />
-                </Grid>
             </Grid>
         </Box>
     );
@@ -165,6 +154,11 @@ export default function AnalyticsPageLayout({
 // ─── Internal sub-components (co-located, not re-exported) ──
 
 function BreakdownPieChart({ data, title }: { data: CategoryDataPoint[]; title: string }) {
+    // Log data for debugging tooltip mismatches
+    // eslint-disable-next-line no-console
+    console.debug('BreakdownPieChart data', data);
+
+    const total = data.reduce((s, d) => s + Number(d.value ?? 0), 0);
     return (
         <Card sx={{ p: 2.5, height: '100%' }}>
             <Typography variant="h6" sx={{ mb: 2 }}>{title}</Typography>
@@ -195,42 +189,16 @@ function BreakdownPieChart({ data, title }: { data: CategoryDataPoint[]; title: 
                                 />
                             ))}
                         </Pie>
-                        <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [`${v}%`, String(name)]} />
+                        <Tooltip
+                            contentStyle={tooltipStyle}
+                            formatter={(v, name) => {
+                                const value = Number(v ?? 0);
+                                const pct = total > 0 ? (value / total) * 100 : 0;
+                                return [`${value} (${pct.toFixed(0)}%)`, String(name)];
+                            }}
+                        />
                         <Legend iconType={LEGEND_ICON_TYPE} iconSize={LEGEND_ICON_SIZE} wrapperStyle={LEGEND_STYLE} />
                     </PieChart>
-                </ResponsiveContainer>
-            </Box>
-        </Card>
-    );
-}
-
-function DistributionBarChart({ data, title }: { data: CategoryDataPoint[]; title: string }) {
-    return (
-        <Card sx={{ p: 2.5, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>{title}</Typography>
-            <Box sx={{ width: '100%', height: 300 }} role="img" aria-label={title}>
-                <ResponsiveContainer>
-                    <BarChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray={GRID_DASH} stroke={GRID_STROKE} vertical={false} />
-                        <XAxis
-                            dataKey="name"
-                            tick={AXIS_TICK_STYLE}
-                            axisLine={AXIS_LINE_STYLE}
-                        />
-                        <YAxis
-                            tick={AXIS_TICK_STYLE}
-                            axisLine={AXIS_LINE_STYLE}
-                        />
-                        <Tooltip contentStyle={tooltipStyle} formatter={(v) => [Number(v).toLocaleString('fr-FR'), 'Valeur']} />
-                        <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32} animationDuration={ANIMATION_DURATION}>
-                            {data.map((entry, idx) => (
-                                <Cell
-                                    key={entry.name}
-                                    fill={entry.color ?? `hsl(${idx * 60}, 70%, 55%)`}
-                                />
-                            ))}
-                        </Bar>
-                    </BarChart>
                 </ResponsiveContainer>
             </Box>
         </Card>
