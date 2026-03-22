@@ -6,7 +6,7 @@ import { fetchFitnessData } from '@/services/analytics.service';
 import type { DateRange } from '@/types';
 
 export default function FitnessPage() {
-    const [range, setRange] = useState<DateRange>('30d');
+    const [range, setRange] = useState<DateRange>('all');
 
     const { data, isLoading, isError } = useQuery<import('@/types').AnalyticsPageData, Error>({
         queryKey: ['analytics', 'fitness', range],

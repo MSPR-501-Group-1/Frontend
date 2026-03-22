@@ -7,6 +7,7 @@ interface DateRangeSelectorProps {
 }
 
 const OPTIONS: { value: DateRange; label: string }[] = [
+    { value: 'all', label: 'Tout' },
     { value: '7d', label: '7 jours' },
     { value: '30d', label: '30 jours' },
     { value: '90d', label: '90 jours' },
