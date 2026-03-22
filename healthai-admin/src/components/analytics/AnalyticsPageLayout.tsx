@@ -79,7 +79,7 @@ export default function AnalyticsPageLayout({
             {/* Main time series chart */}
             <Card sx={{ p: 2.5, mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 2 }}>
-                    <Typography variant="h6">{chartConfig.label}</Typography>
+                    <Typography variant="h6" component="p">{chartConfig.label}</Typography>
                     <Typography variant="body2" color="text.secondary">
                         Moyenne : {avg.toLocaleString('fr-FR')}{chartConfig.yAxisUnit ? ` ${chartConfig.yAxisUnit}` : ''}
                     </Typography>
@@ -161,7 +161,7 @@ function BreakdownPieChart({ data, title }: { data: CategoryDataPoint[]; title: 
     const total = data.reduce((s, d) => s + Number(d.value ?? 0), 0);
     return (
         <Card sx={{ p: 2.5, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>{title}</Typography>
+            <Typography variant="h6" component="p" sx={{ mb: 2 }}>{title}</Typography>
             <Box sx={{ width: '100%', height: 300 }} role="img" aria-label={title}>
                 <ResponsiveContainer>
                     <PieChart>
@@ -203,4 +203,38 @@ function BreakdownPieChart({ data, title }: { data: CategoryDataPoint[]; title: 
             </Box>
         </Card>
     );
+}
+
+function DistributionBarChart({ data, title }: { data: CategoryDataPoint[]; title: string }) {
+    return (
+        <Card sx={{ p: 2.5, height: '100%' }}>
+            <Typography variant="h6" component="p" sx={{ mb: 2 }}>{title}</Typography>
+            <Box sx={{ width: '100%', height: 300 }} role="img" aria-label={title}>
+                <ResponsiveContainer>
+                    <BarChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray={GRID_DASH} stroke={GRID_STROKE} vertical={false} />
+                        <XAxis
+                            dataKey="name"
+                            tick={AXIS_TICK_STYLE}
+                            axisLine={AXIS_LINE_STYLE}
+                        />
+                        <YAxis
+                            tick={AXIS_TICK_STYLE}
+                            axisLine={AXIS_LINE_STYLE}
+                        />
+                        <Tooltip contentStyle={tooltipStyle} formatter={(v) => [Number(v).toLocaleString('fr-FR'), 'Valeur']} />
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32} animationDuration={ANIMATION_DURATION}>
+                            {data.map((entry, idx) => (
+                                <Cell
+                                    key={entry.name}
+                                    fill={entry.color ?? `hsl(${idx * 60}, 70%, 55%)`}
+                                />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </Box>
+        </Card>
+    );
+  }
 }

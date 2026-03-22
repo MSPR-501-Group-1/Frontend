@@ -42,6 +42,7 @@ const EXPORT_COLUMNS: ExportColumn[] = [
 export default function AnomaliesPage() {
     const queryClient = useQueryClient();
     const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('all');
+    const severityFilterLabelId = 'anomalies-severity-filter-label';
     const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -205,8 +206,9 @@ export default function AnomaliesPage() {
                 }
             >
                 <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel>Sévérité</InputLabel>
+                    <InputLabel id={severityFilterLabelId}>Sévérité</InputLabel>
                     <Select
+                        labelId={severityFilterLabelId}
                         value={severityFilter}
                         label="Sévérité"
                         onChange={(e: SelectChangeEvent) => setSeverityFilter(e.target.value as SeverityFilter)}

@@ -1,0 +1,25 @@
+{
+    "defaultProfile": "admin",
+    "profiles": {
+        "admin": {
+            "user": {
+                "user_id": "AUDIT_ADMIN_001",
+                "email": "audit-admin@localhost",
+                "first_name": "Audit",
+                "last_name": "Admin",
+                "role_type": "ADMIN"
+            },
+            "tokenPrefix": "lh-admin"
+        },
+        "premium_plus": {
+            "user": {
+                "user_id": "AUDIT_PREMIUM_PLUS_001",
+                "email": "audit-premium-plus@localhost",
+                "first_name": "Audit",
+                "last_name": "PremiumPlus",
+                "role_type": "PREMIUM_PLUS"
+            },
+            "tokenPrefix": "lh-premium-plus"
+        }
+    }
+}

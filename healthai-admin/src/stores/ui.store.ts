@@ -12,16 +12,23 @@ export type ThemeMode = 'light' | 'dark';
 
 interface UIState {
     themeMode: ThemeMode;
+    highContrast: boolean;
     toggleTheme: () => void;
+    toggleHighContrast: () => void;
 }
 
 export const useUIStore = create<UIState>()(
     persist(
         (set) => ({
             themeMode: 'light',
+            highContrast: false,
             toggleTheme: () =>
                 set((state) => ({
                     themeMode: state.themeMode === 'light' ? 'dark' : 'light',
+                })),
+            toggleHighContrast: () =>
+                set((state) => ({
+                    highContrast: !state.highContrast,
                 })),
         }),
         {

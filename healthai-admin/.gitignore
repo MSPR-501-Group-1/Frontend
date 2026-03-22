@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary file generated during Lighthouse audits.
+public/lighthouse-auth-bootstrap.html

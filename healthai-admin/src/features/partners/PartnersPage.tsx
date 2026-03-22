@@ -60,6 +60,8 @@ type StatusFilter = 'all' | PartnerStatus;
 export default function PartnersPage() {
     const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+    const typeFilterLabelId = 'partners-type-filter-label';
+    const statusFilterLabelId = 'partners-status-filter-label';
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['partners-dashboard'],
@@ -203,8 +205,9 @@ export default function PartnersPage() {
             {/* Filters */}
             <FilterBar resultCount={filteredPartners.length} resultLabel="partenaire">
                 <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel>Type</InputLabel>
+                    <InputLabel id={typeFilterLabelId}>Type</InputLabel>
                     <Select
+                        labelId={typeFilterLabelId}
                         value={typeFilter}
                         label="Type"
                         onChange={(e: SelectChangeEvent) => setTypeFilter(e.target.value as TypeFilter)}
@@ -217,8 +220,9 @@ export default function PartnersPage() {
                 </FormControl>
 
                 <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel>Statut</InputLabel>
+                    <InputLabel id={statusFilterLabelId}>Statut</InputLabel>
                     <Select
+                        labelId={statusFilterLabelId}
                         value={statusFilter}
                         label="Statut"
                         onChange={(e: SelectChangeEvent) => setStatusFilter(e.target.value as StatusFilter)}

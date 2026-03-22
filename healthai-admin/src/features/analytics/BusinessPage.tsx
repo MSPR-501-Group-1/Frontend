@@ -57,7 +57,7 @@ export default function BusinessPage() {
 
             {/* Engagement trend (LineChart) */}
             <Card sx={{ p: 2, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
+                <Typography variant="h6" component="p" gutterBottom>
                     Utilisateurs actifs / jour (30 derniers jours)
                 </Typography>
                 <ResponsiveContainer width="100%" height={300}>
@@ -114,7 +114,7 @@ export default function BusinessPage() {
                 {/* Retention cohorts (BarChart) */}
                 <Grid size={{ xs: 12, md: 4 }}>
                     <Card sx={{ p: 2, height: '100%' }}>
-                        <Typography variant="h6" gutterBottom>
+                        <Typography variant="h6" component="p" gutterBottom>
                             Rétention par cohorte
                         </Typography>
                         <ResponsiveContainer width="100%" height={280}>
@@ -155,7 +155,7 @@ export default function BusinessPage() {
                 {/* Feature adoption (PieChart) */}
                 <Grid size={{ xs: 12, md: 4 }}>
                     <Card sx={{ p: 2, height: '100%' }}>
-                        <Typography variant="h6" gutterBottom>
+                        <Typography variant="h6" component="p" gutterBottom>
                             Adoption des fonctionnalités
                         </Typography>
                         <ResponsiveContainer width="100%" height={280}>
@@ -192,7 +192,7 @@ export default function BusinessPage() {
                 {/* Revenue vs Target (grouped BarChart) */}
                 <Grid size={{ xs: 12, md: 4 }}>
                     <Card sx={{ p: 2, height: '100%' }}>
-                        <Typography variant="h6" gutterBottom>
+                        <Typography variant="h6" component="p" gutterBottom>
                             Revenus vs Objectif
                         </Typography>
                         <ResponsiveContainer width="100%" height={280}>

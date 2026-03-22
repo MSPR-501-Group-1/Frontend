@@ -14,7 +14,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import {
     Box, Grid, Paper, Typography, Switch, Slider, Button,
-    Chip, Card, CardContent, Stack, Divider,
+    Chip, Card, CardContent, Stack, Divider, FormControlLabel,
 } from '@mui/material';
 import {
     Save as SaveIcon,
@@ -169,7 +169,7 @@ export default function ConfigPage() {
                     checked={row.enabled}
                     onChange={(_, checked) => handleRuleToggle(row.id, checked)}
                     size="small"
-                    inputProps={{ 'aria-label': `Activer la règle ${row.field}` }}
+                    slotProps={{ input: { 'aria-label': `Activer la règle ${row.field}` } }}
                 />
             ),
         },
@@ -333,20 +333,28 @@ function AlertThresholdCard({ threshold, onToggle }: AlertThresholdCardProps) {
         <Card
             sx={{
                 height: '100%',
-                opacity: threshold.enabled ? 1 : 0.6,
-                transition: 'opacity 0.2s',
+                borderWidth: 1,
+                borderStyle: 'solid',
+                borderColor: threshold.enabled ? 'divider' : 'grey.400',
+                bgcolor: threshold.enabled ? 'background.paper' : 'grey.50',
             }}
         >
             <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600}>
+                    <Typography variant="subtitle1" component="p" fontWeight={600}>
                         {threshold.metric}
                     </Typography>
-                    <Switch
-                        checked={threshold.enabled}
-                        onChange={(_, checked) => onToggle(threshold.id, checked)}
-                        size="small"
-                        inputProps={{ 'aria-label': `Activer le seuil ${threshold.metric}` }}
+                    <FormControlLabel
+                        label=""
+                        sx={{ m: 0 }}
+                        control={
+                            <Switch
+                                checked={threshold.enabled}
+                                onChange={(_, checked) => onToggle(threshold.id, checked)}
+                                size="small"
+                                slotProps={{ input: { 'aria-label': `Activer le seuil ${threshold.metric}` } }}
+                            />
+                        }
                     />
                 </Stack>
 

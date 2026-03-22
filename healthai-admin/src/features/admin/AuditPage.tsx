@@ -48,6 +48,7 @@ const EXPORT_COLUMNS: ExportColumn[] = [
 
 export default function AuditPage() {
     const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
+    const actionFilterLabelId = 'audit-action-filter-label';
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
 
@@ -147,8 +148,9 @@ export default function AuditPage() {
                 }
             >
                 <FormControl size="small" sx={{ minWidth: 200 }}>
-                    <InputLabel>Type d'action</InputLabel>
+                    <InputLabel id={actionFilterLabelId}>Type d'action</InputLabel>
                     <Select
+                        labelId={actionFilterLabelId}
                         value={actionFilter}
                         label="Type d'action"
                         onChange={(e: SelectChangeEvent) => setActionFilter(e.target.value as ActionFilter)}

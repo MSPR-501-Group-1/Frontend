@@ -3,7 +3,7 @@
  */
 
 import { Box, Typography, Paper, LinearProgress, Chip } from '@mui/material';
-import { STATUS_HEX } from '@/lib/status.utils';
+import { STATUS_MUI_COLOR } from '@/lib/status.utils';
 import type { KPIStatus } from '@/types';
 
 interface DimensionCardProps {
@@ -14,19 +14,17 @@ interface DimensionCardProps {
 }
 
 export default function DimensionCard({ label, score, description, status }: DimensionCardProps) {
-    const color = STATUS_HEX[status];
-
     return (
         <Paper
             elevation={0}
-            sx={{
+            sx={(theme) => ({
                 p: 2.5,
                 borderLeft: 4,
-                borderColor: color,
+                borderColor: theme.palette[STATUS_MUI_COLOR[status]].main,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 1,
-            }}
+            })}
         >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="subtitle1" fontWeight={600}>
@@ -35,18 +33,29 @@ export default function DimensionCard({ label, score, description, status }: Dim
                 <Chip
                     label={`${score}%`}
                     size="small"
-                    sx={{ fontWeight: 700, bgcolor: `${color}18`, color }}
+                    sx={(theme) => {
+                        const tone = theme.palette[STATUS_MUI_COLOR[status]].main;
+                        return {
+                            fontWeight: 700,
+                            bgcolor: tone,
+                            color: theme.palette.getContrastText(tone),
+                        };
+                    }}
                 />
             </Box>
             <LinearProgress
                 variant="determinate"
                 value={score}
-                sx={{
+                aria-label={`Progression de ${label} : ${score} sur 100`}
+                sx={(theme) => ({
                     height: 8,
                     borderRadius: 4,
                     bgcolor: 'grey.100',
-                    '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: color },
-                }}
+                    '& .MuiLinearProgress-bar': {
+                        borderRadius: 4,
+                        bgcolor: theme.palette[STATUS_MUI_COLOR[status]].main,
+                    },
+                })}
             />
             <Typography variant="body2" color="text.secondary">
                 {description}

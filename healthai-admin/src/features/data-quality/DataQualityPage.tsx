@@ -93,8 +93,14 @@ export default function DataQualityPage() {
                     <Chip
                         label={scoreToLabel(data.overall)}
                         size="small"
-                        color={STATUS_MUI_COLOR[scoreToStatus(data.overall)]}
-                        sx={{ fontWeight: 600 }}
+                        sx={(theme) => {
+                            const tone = theme.palette[STATUS_MUI_COLOR[scoreToStatus(data.overall)]].main;
+                            return {
+                                fontWeight: 700,
+                                bgcolor: tone,
+                                color: theme.palette.getContrastText(tone),
+                            };
+                        }}
                     />
                 </Paper>
 
@@ -108,7 +114,7 @@ export default function DataQualityPage() {
             </Box>
 
             {/* Dimensions grid */}
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" component="p" gutterBottom>
                 Scores par dimension
             </Typography>
             <Box

@@ -1,0 +1,21 @@
+{
+    "public": [
+        "/login",
+        "/403"
+    ],
+    "protected": [
+        "/",
+        "/data/pipeline",
+        "/data/quality",
+        "/data/anomalies",
+        "/data/validation",
+        "/analytics/nutrition",
+        "/analytics/fitness",
+        "/analytics/biometric",
+        "/analytics/business",
+        "/partners",
+        "/admin/users",
+        "/admin/audit",
+        "/admin/config"
+    ]
+}

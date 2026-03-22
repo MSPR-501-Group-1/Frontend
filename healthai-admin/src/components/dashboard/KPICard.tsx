@@ -52,8 +52,8 @@ export default function KPICard({ label, value, unit, trend, status = 'success',
                         label={`${trend > 0 ? '+' : ''}${trend}%`}
                         color={trendColor}
                         size="small"
-                        variant="outlined"
-                        sx={{ fontWeight: 600 }}
+                        variant="filled"
+                        sx={{ fontWeight: 700 }}
                     />
                 </Box>
             )}
@@ -75,7 +75,6 @@ export default function KPICard({ label, value, unit, trend, status = 'success',
                 <CardActionArea
                     onClick={() => navigate(to)}
                     sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between' }}
-                    aria-label={`Voir le détail : ${label}`}
                 >
                     {cardContent}
                 </CardActionArea>

@@ -33,3 +33,6 @@ yarn-error.log*
 # Workspace
 /sandbox/
 /documentation/
+
+# Generated Lighthouse reports (runtime artifacts)
+/lighthouse/a11y-batch-reports/
