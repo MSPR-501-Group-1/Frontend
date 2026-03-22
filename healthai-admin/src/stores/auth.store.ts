@@ -44,7 +44,8 @@ export const useAuthStore = create<AuthState>()(
         }),
         {
             name: 'healthai-auth',
-            storage: createJSONStorage(() => sessionStorage),
+            // Persist auth state to localStorage so token survives browser restart
+            storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 user: state.user,
                 token: state.token,
