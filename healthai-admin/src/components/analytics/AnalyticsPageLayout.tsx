@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, ReferenceLine,
-    PieChart, Pie, Cell, Legend,
+    PieChart, Pie, Cell, Legend, BarChart, Bar,
 } from 'recharts';
 import KPICard from '@/components/dashboard/KPICard';
 import { PageHeader } from '@/components/feedback';
@@ -145,6 +145,9 @@ export default function AnalyticsPageLayout({
             <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 6 }}>
                     <BreakdownPieChart data={data.breakdown} title={breakdownTitle} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <DistributionBarChart data={data.distribution} title="Distribution" />
                 </Grid>
             </Grid>
         </Box>
