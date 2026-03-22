@@ -99,7 +99,7 @@ export interface DashboardData {
 
 // ─── Analytics page models ──────────────────────────────────
 
-export type DateRange = '7d' | '30d' | '90d';
+export type DateRange = '7d' | '30d' | '90d' | 'all';
 
 export interface AnalyticsPageData {
     kpis: BusinessKPI[];

@@ -30,12 +30,14 @@ function useAuthHydrated(): boolean {
 export function RequireAuth({ children }: Props) {
     const hydrated = useAuthHydrated();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const user = useAuthStore((s) => s.user);
 
     if (!hydrated) {
         return <LoadingScreen />;
     }
 
-    if (!isAuthenticated) {
+    // Guard against stale persisted states (e.g. token/auth flag without user payload).
+    if (!isAuthenticated || !user) {
         return <Navigate to="/login" replace />;
     }
 
@@ -48,9 +50,19 @@ interface RequireRoleProps extends Props {
 
 /** Redirects to /403 if user role is not in allowed roles */
 export function RequireRole({ children, roles }: RequireRoleProps) {
+    const hydrated = useAuthHydrated();
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const user = useAuthStore((s) => s.user);
 
-    if (!user || !roles.includes(user.role_type)) {
+    if (!hydrated) {
+        return <LoadingScreen />;
+    }
+
+    if (!isAuthenticated || !user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    if (!roles.includes(user.role_type)) {
         return <Navigate to="/403" replace />;
     }
 

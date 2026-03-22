@@ -6,6 +6,7 @@ const RANGE_DAYS: Record<DateRange, number> = {
     '7d': 7,
     '30d': 30,
     '90d': 90,
+    all: 0,
 };
 
 /**
@@ -16,6 +17,8 @@ export function useDateRange(data: TimeSeriesPoint[], defaultRange: DateRange = 
     const [range, setRange] = useState<DateRange>(defaultRange);
 
     const filteredData = useMemo(() => {
+        if (range === 'all') return data;
+
         const days = RANGE_DAYS[range];
         const cutoff = subDays(new Date(), days);
         return data.filter((point) => new Date(point.date) >= cutoff);

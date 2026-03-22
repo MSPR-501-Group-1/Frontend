@@ -33,12 +33,34 @@ export interface RequestOptions extends Omit<RequestInit, 'body'> {
 
 // ─── Configuration ──────────────────────────────────────────
 
-const BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? '/api';
+const RAW_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+function resolveBaseUrl(value: unknown): string {
+    if (typeof value !== 'string') return '/api';
+
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === '/') return '/api';
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        return trimmed;
+    }
+
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
+const BASE_URL: string = resolveBaseUrl(RAW_BASE_URL);
 
 // ─── Helpers ────────────────────────────────────────────────
 
 function buildUrl(path: string, params?: RequestOptions['params']): string {
-    const url = new URL(path, BASE_URL.startsWith('http') ? BASE_URL : `${window.location.origin}${BASE_URL}`);
+    const normalizedBase = BASE_URL.endsWith('/') ? BASE_URL : `${BASE_URL}/`;
+    const base = BASE_URL.startsWith('http')
+        ? normalizedBase
+        : `${window.location.origin}${normalizedBase}`;
+
+    // Keep BASE_URL path segment (e.g. "/api") even if callers pass paths like "/auth/login".
+    const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+    const url = new URL(normalizedPath, base);
     if (params) {
         Object.entries(params).forEach(([key, value]) => {
             if (value !== undefined) url.searchParams.set(key, String(value));
@@ -98,8 +120,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
         // Centralised side-effects for specific HTTP codes
         if (response.status === 401) {
             // Clear persisted auth (both storages) and redirect to login
-            try { localStorage.removeItem('healthai-auth'); } catch {}
-            try { sessionStorage.removeItem('healthai-auth'); } catch {}
+            try { localStorage.removeItem('healthai-auth'); } catch { }
+            try { sessionStorage.removeItem('healthai-auth'); } catch { }
             window.location.href = '/login';
         }
 
