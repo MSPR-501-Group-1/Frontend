@@ -15,21 +15,25 @@
             throw new Error('Restricted to localhost');
         }
 
-        const params = new URLSearchParams(location.search);
-        const authEnabled = params.get('auth') !== '0';
-        const highContrast = params.get('highContrast') === '1';
-        const themeMode = params.get('theme') === 'dark' ? 'dark' : 'light';
-        const expiresAt = params.get('expiresAt');
+        let bootstrapConfig = null;
+        if (typeof __LIGHTHOUSE_BOOTSTRAP_CONFIG__ !== 'undefined') {
+            bootstrapConfig = __LIGHTHOUSE_BOOTSTRAP_CONFIG__;
+        }
 
-        function readAuthStateFromQuery() {
-            const encoded = params.get('authState');
-            if (!encoded) return null;
-
-            try {
-                return JSON.parse(encoded);
-            } catch (error) {
-                throw new Error(`Invalid authState query payload: ${error instanceof Error ? error.message : String(error)}`);
+        if (!bootstrapConfig || typeof bootstrapConfig !== 'object') {
+            const params = new URLSearchParams(location.search);
+            const encodedCfg = params.get('cfg');
+            if (encodedCfg) {
+                try {
+                    bootstrapConfig = JSON.parse(encodedCfg);
+                } catch (error) {
+                    throw new Error(`Invalid cfg payload: ${error instanceof Error ? error.message : String(error)}`);
+                }
             }
+        }
+
+        if (!bootstrapConfig || typeof bootstrapConfig !== 'object') {
+            throw new Error('Missing or invalid bootstrap config.');
         }
 
         function isValidUser(user) {
@@ -38,50 +42,45 @@
             return requiredKeys.every((key) => typeof user[key] === 'string' && user[key].trim().length > 0);
         }
 
-        function isExpired(isoDate) {
-            if (!isoDate) return false;
-            const expiration = Date.parse(isoDate);
-            if (Number.isNaN(expiration)) return true;
-            return Date.now() > expiration;
-        }
+        const auth = bootstrapConfig.auth && typeof bootstrapConfig.auth === 'object'
+            ? bootstrapConfig.auth
+            : { enabled: false };
+        const ui = bootstrapConfig.ui && typeof bootstrapConfig.ui === 'object'
+            ? bootstrapConfig.ui
+            : {};
 
-        const rawAuthState = readAuthStateFromQuery();
-        if (authEnabled) {
-            if (!rawAuthState || typeof rawAuthState !== 'object') {
-                throw new Error('Missing authState payload while auth is enabled.');
+        if (auth.enabled) {
+            if (!isValidUser(auth.user)) {
+                throw new Error('Invalid auth.user payload.');
             }
-            if (!isValidUser(rawAuthState.user)) {
-                throw new Error('Invalid authState.user payload.');
-            }
-            if (typeof rawAuthState.token !== 'string' || rawAuthState.token.trim().length === 0) {
-                throw new Error('Invalid authState.token payload.');
-            }
-            if (isExpired(rawAuthState.expiresAt || expiresAt)) {
-                throw new Error('Expired authState payload.');
+            if (typeof auth.token !== 'string' || auth.token.trim().length === 0) {
+                throw new Error('Invalid auth.token payload.');
             }
 
             const authState = {
                 state: {
-                    user: rawAuthState.user,
-                    token: rawAuthState.token,
+                    user: auth.user,
+                    token: auth.token,
                     isAuthenticated: true,
                 },
                 version: 0,
             };
-            sessionStorage.setItem('healthai-auth', JSON.stringify(authState));
+            localStorage.setItem('healthai-auth', JSON.stringify(authState));
+            sessionStorage.removeItem('healthai-auth');
         } else {
+            localStorage.removeItem('healthai-auth');
             sessionStorage.removeItem('healthai-auth');
         }
 
         localStorage.setItem('healthai-ui', JSON.stringify({
             state: {
-                themeMode,
-                highContrast,
+                themeMode: ui.themeMode === 'dark' ? 'dark' : 'light',
+                highContrast: ui.highContrast === true,
             },
             version: 0,
         }));
 
-        const target = params.get('target') || '/analytics/fitness';
+        const target = typeof bootstrapConfig.target === 'string' ? bootstrapConfig.target : '/analytics/fitness';
         const safeTarget = target.startsWith('/') ? target : '/analytics/fitness';
         location.replace(safeTarget);
     </script>
