@@ -236,5 +236,4 @@ function DistributionBarChart({ data, title }: { data: CategoryDataPoint[]; titl
             </Box>
         </Card>
     );
-  }
 }
