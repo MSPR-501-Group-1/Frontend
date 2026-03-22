@@ -2,19 +2,28 @@ import { apiClient } from '@/api';
 import { format } from 'date-fns';
 import type { AnalyticsPageData } from '@/types';
 
-// Fetch fitness analytics on UsersMetrics
-export async function fetchFitnessData(range?: string): Promise<AnalyticsPageData> {
-    const resp = await apiClient.get<{
-        success: boolean;
-        data: {
-            dailyMetrics: Array<{ jour: string; total_minutes: string }>;
-            averageSessionsPerWeek: string;
-            averageDuration: string;
-            distribution?: Array<{ category: string; count: number | string }>;
-        };
-    }>('/metrics/usersMetrics', { params: { range } });
+interface FitnessMetricsPayload {
+    dailyMetrics: Array<{ jour: string; total_minutes: number | string }>;
+    averageSessionsPerWeek: number | string | null;
+    averageDuration: number | string | null;
+    distribution?: Array<{ category: string; count: number | string }>;
+}
 
-    const daily = resp.data.dailyMetrics ?? [];
+interface FitnessMetricsResponse {
+    success?: boolean;
+    data?: FitnessMetricsPayload;
+}
+
+function normalizeFitnessPayload(resp: FitnessMetricsResponse | FitnessMetricsPayload): FitnessMetricsPayload {
+    return (resp as FitnessMetricsResponse).data ?? (resp as FitnessMetricsPayload);
+}
+
+// Fetch fitness analytics from real backend endpoint
+export async function fetchFitnessData(range?: string): Promise<AnalyticsPageData> {
+    const raw = await apiClient.get<FitnessMetricsResponse | FitnessMetricsPayload>('/metrics/fitness', { params: { range } });
+    const payload = normalizeFitnessPayload(raw);
+
+    const daily = payload.dailyMetrics ?? [];
 
     const timeSeries = daily.map((d) => ({
         date: format(new Date(d.jour), 'yyyy-MM-dd'),
@@ -28,12 +37,12 @@ export async function fetchFitnessData(range?: string): Promise<AnalyticsPageDat
     const totalMinutes = daily.reduce((s, p) => s + Number(p.total_minutes ?? 0), 0);
 
     const kpis = [
-        { id: 'sessions-week', label: 'Sessions / semaine', value: Number(resp.data.averageSessionsPerWeek ?? 0), status: 'success' } as const,
-        { id: 'avg-duration', label: 'Durée moyenne', value: Number(resp.data.averageDuration ?? 0), unit: 'min', status: 'success' } as const,
+        { id: 'sessions-week', label: 'Sessions / semaine', value: Number(payload.averageSessionsPerWeek ?? 0), status: 'success' } as const,
+        { id: 'avg-duration', label: 'Durée moyenne', value: Number(payload.averageDuration ?? 0), unit: 'min', status: 'success' } as const,
         { id: 'total-duration-period', label: 'Durée totale sur la période', value: totalMinutes, unit: 'min', status: 'success' } as const,
     ] as unknown as import('@/types').BusinessKPI[];
 
-    const breakdown = (resp.data.distribution ?? []).map((d) => ({ name: d.category, value: Number(d.count) }));
+    const breakdown = (payload.distribution ?? []).map((d) => ({ name: d.category, value: Number(d.count) }));
 
     return {
         kpis,

@@ -13,6 +13,14 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, LocalHospital } from '@mui/icons-material';
 import { useAuthStore } from '@/stores/auth.store';
+import type { ApiError } from '@/api';
+
+function isApiError(value: unknown): value is ApiError {
+    return typeof value === 'object'
+        && value !== null
+        && 'message' in value
+        && 'status' in value;
+}
 
 export default function LoginPage() {
     const [email, setEmail] = useState('admin@healthapp.com');
@@ -29,6 +37,10 @@ export default function LoginPage() {
         try {
             await login(email, password);
         } catch (err) {
+            if (isApiError(err)) {
+                setError(err.message);
+                return;
+            }
             setError(err instanceof Error ? err.message : 'Erreur de connexion');
         }
     };
