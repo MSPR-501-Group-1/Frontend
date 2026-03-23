@@ -1,38 +1,78 @@
 import { Card, CardActionArea, Typography, Box, Chip } from '@mui/material';
 import { TrendingUp, TrendingDown, Remove } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { STATUS_MUI_COLOR } from '@/lib/status.utils';
 import type { KPIStatus } from '@/types';
 
 interface KPICardProps {
     label: string;
+    description?: string;
     value: string | number;
     unit?: string;
+    comparedValue?: string | number | null;
+    comparedUnit?: string;
     trend?: number;
+    trendUnit?: '%' | 'pts';
+    trendPositiveIsGood?: boolean;
     status?: KPIStatus;
     to?: string;
 }
 
-export default function KPICard({ label, value, unit, trend, status = 'success', to }: KPICardProps) {
+export default function KPICard({
+    label,
+    description,
+    value,
+    unit,
+    comparedValue,
+    comparedUnit,
+    trend,
+    trendUnit = '%',
+    trendPositiveIsGood = true,
+    to,
+}: KPICardProps) {
     const navigate = useNavigate();
 
+    const hasTrend = typeof trend === 'number' && Number.isFinite(trend);
+    const trendValue = hasTrend ? trend : undefined;
+
     const trendIcon =
-        trend === undefined ? null
-            : trend > 0 ? <TrendingUp sx={{ fontSize: 16 }} />
-                : trend < 0 ? <TrendingDown sx={{ fontSize: 16 }} />
+        trendValue === undefined ? null
+            : trendValue > 0 ? <TrendingUp sx={{ fontSize: 16 }} />
+                : trendValue < 0 ? <TrendingDown sx={{ fontSize: 16 }} />
                     : <Remove sx={{ fontSize: 16 }} />;
 
     const trendColor: 'success' | 'error' | 'default' =
-        trend === undefined ? 'default'
-            : trend > 0 ? 'success'
-                : trend < 0 ? 'error'
-                    : 'default';
+        trendValue === undefined || trendValue === 0
+            ? 'default'
+            : ((trendPositiveIsGood && trendValue > 0) || (!trendPositiveIsGood && trendValue < 0))
+                ? 'success'
+                : 'error';
+
+    const borderColor = trendColor === 'success'
+        ? 'success.main'
+        : trendColor === 'error'
+            ? 'error.main'
+            : 'divider';
+
+    const hasCompared = comparedValue !== undefined && comparedValue !== null;
+    const comparedText = hasCompared
+        ? `${typeof comparedValue === 'number' ? comparedValue.toLocaleString('fr-FR') : comparedValue}${comparedUnit ? ` ${comparedUnit}` : ''}`
+        : null;
 
     const cardContent = (
         <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 {label}
             </Typography>
+            {description && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.25 }}>
+                    {description}
+                </Typography>
+            )}
+            {comparedText && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.25 }}>
+                    Compare a la periode precedente: {comparedText}
+                </Typography>
+            )}
 
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
                 <Typography variant="h4" fontWeight={700}>
@@ -45,11 +85,11 @@ export default function KPICard({ label, value, unit, trend, status = 'success',
                 )}
             </Box>
 
-            {trend !== undefined && (
+            {trendValue !== undefined && (
                 <Box sx={{ mt: 1 }}>
                     <Chip
                         icon={trendIcon ?? undefined}
-                        label={`${trend > 0 ? '+' : ''}${trend}%`}
+                        label={`${trendValue > 0 ? '+' : ''}${trendValue}${trendUnit}`}
                         color={trendColor}
                         size="small"
                         variant="filled"
@@ -66,7 +106,7 @@ export default function KPICard({ label, value, unit, trend, status = 'success',
         flexDirection: 'column' as const,
         justifyContent: 'space-between',
         borderLeft: 4,
-        borderColor: `${STATUS_MUI_COLOR[status]}.main`,
+        borderColor,
     };
 
     if (to) {

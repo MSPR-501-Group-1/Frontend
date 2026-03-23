@@ -47,7 +47,6 @@ export default function AnalyticsPageLayout({
     }, [range, onRangeChange]);
 
     const gradientId = `area-${chartConfig.color.replace('#', '')}`;
-    const targetValue = filteredData[0]?.target;
     const avg = filteredData.length > 0
         ? Math.round(filteredData.reduce((s, p) => s + p.value, 0) / filteredData.length * 10) / 10
         : 0;
@@ -67,9 +66,14 @@ export default function AnalyticsPageLayout({
                     <Grid key={kpi.id} size={{ xs: 12, sm: 6, md: 3 }}>
                         <KPICard
                             label={kpi.label}
+                            description={kpi.description}
                             value={kpi.value}
                             unit={kpi.unit}
+                            comparedValue={kpi.comparedValue}
+                            comparedUnit={kpi.comparedUnit}
                             trend={kpi.trend}
+                            trendUnit={kpi.trendUnit}
+                            trendPositiveIsGood={kpi.trendPositiveIsGood}
                             status={kpi.status}
                         />
                     </Grid>
@@ -122,14 +126,6 @@ export default function AnalyticsPageLayout({
                                 activeDot={{ r: 5, strokeWidth: 2, fill: '#fff', stroke: chartConfig.color }}
                                 animationDuration={ANIMATION_DURATION}
                             />
-                            {targetValue !== undefined && (
-                                <ReferenceLine
-                                    y={targetValue}
-                                    stroke={REFERENCE_LINE_COLORS.target}
-                                    strokeDasharray="6 4"
-                                    label={{ value: 'Objectif', fill: REFERENCE_LINE_COLORS.target, fontSize: 11 }}
-                                />
-                            )}
                             <ReferenceLine
                                 y={avg}
                                 stroke={REFERENCE_LINE_COLORS.average}
