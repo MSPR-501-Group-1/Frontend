@@ -5,8 +5,10 @@ import {
     BarChart, Bar,
     PieChart, Pie, Cell,
 } from 'recharts';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import KPICard from '@/components/dashboard/KPICard';
+import DateRangeSelector from '@/components/analytics/DateRangeSelector';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import { fetchBusinessData } from '@/services/business.service';
 import {
@@ -16,14 +18,23 @@ import {
     REFERENCE_LINE_COLORS,
 } from '@/lib/chart.constants';
 import { formatShortDate, formatTooltipDate, formatCompact } from '@/lib/formatters';
-import type { CategoryDataPoint } from '@/types';
+import type { CategoryDataPoint, DateRange } from '@/types';
 
 // ─── Page ───────────────────────────────────────────────────
 
 export default function BusinessPage() {
+    const [range, setRange] = useState<DateRange>('30d');
+
+    const rangeLabel: Record<DateRange, string> = {
+        '7d': '7 derniers jours',
+        '30d': '30 derniers jours',
+        '90d': '90 derniers jours',
+        all: 'historique complet',
+    };
+
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['analytics', 'business'],
-        queryFn: fetchBusinessData,
+        queryKey: ['analytics', 'business', range],
+        queryFn: () => fetchBusinessData(range),
     });
 
     if (isLoading) return <LoadingState />;
@@ -39,6 +50,7 @@ export default function BusinessPage() {
             <PageHeader
                 title="KPIs Business"
                 subtitle="Indicateurs stratégiques d'engagement, de rétention et de performance"
+                actions={<DateRangeSelector value={range} onChange={setRange} />}
             />
 
             {/* KPI Cards */}
@@ -47,8 +59,13 @@ export default function BusinessPage() {
                     <Grid key={kpi.id} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
                         <KPICard
                             label={kpi.label}
+                            description={kpi.description}
                             value={kpi.unit ? `${kpi.value}${kpi.unit}` : kpi.value}
+                            comparedValue={kpi.comparedValue}
+                            comparedUnit={kpi.comparedUnit}
                             trend={kpi.trend}
+                            trendUnit={kpi.trendUnit}
+                            trendPositiveIsGood={kpi.trendPositiveIsGood}
                             status={kpi.status}
                         />
                     </Grid>
@@ -58,7 +75,7 @@ export default function BusinessPage() {
             {/* Engagement trend (LineChart) */}
             <Card sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6" component="p" gutterBottom>
-                    Utilisateurs actifs / jour (30 derniers jours)
+                    Utilisateurs actifs / jour ({rangeLabel[range]})
                 </Typography>
                 <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={data.engagementTrend}>
@@ -85,12 +102,6 @@ export default function BusinessPage() {
                             contentStyle={TOOLTIP_STYLE}
                         />
                         <ReferenceLine
-                            y={4000}
-                            stroke={REFERENCE_LINE_COLORS.target}
-                            strokeDasharray="6 4"
-                            label={{ value: 'Objectif', fill: REFERENCE_LINE_COLORS.target, fontSize: 11 }}
-                        />
-                        <ReferenceLine
                             y={avgDAU}
                             stroke={REFERENCE_LINE_COLORS.average}
                             strokeDasharray="3 3"
@@ -109,13 +120,13 @@ export default function BusinessPage() {
                 </ResponsiveContainer>
             </Card>
 
-            {/* Bottom row: Retention cohorts + Feature adoption + Revenue vs Target */}
+            {/* Bottom row: Role mix + Goal adoption */}
             <Grid container spacing={3}>
-                {/* Retention cohorts (BarChart) */}
-                <Grid size={{ xs: 12, md: 4 }}>
+                {/* Active users by role (BarChart) */}
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card sx={{ p: 2, height: '100%' }}>
                         <Typography variant="h6" component="p" gutterBottom>
-                            Rétention par cohorte
+                            Répartition des actifs par rôle
                         </Typography>
                         <ResponsiveContainer width="100%" height={280}>
                             <BarChart data={data.retentionCohorts} layout="vertical">
@@ -136,7 +147,7 @@ export default function BusinessPage() {
                                 />
                                 <Tooltip
                                     contentStyle={TOOLTIP_STYLE}
-                                    formatter={(value?: number) => [`${value ?? 0}%`, 'Rétention']}
+                                    formatter={(value?: number) => [`${value ?? 0}%`, 'Part des actifs']}
                                 />
                                 <Bar
                                     dataKey="value"
@@ -152,11 +163,11 @@ export default function BusinessPage() {
                     </Card>
                 </Grid>
 
-                {/* Feature adoption (PieChart) */}
-                <Grid size={{ xs: 12, md: 4 }}>
+                {/* Health goal adoption (PieChart) */}
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card sx={{ p: 2, height: '100%' }}>
                         <Typography variant="h6" component="p" gutterBottom>
-                            Adoption des fonctionnalités
+                            Objectifs santé des actifs
                         </Typography>
                         <ResponsiveContainer width="100%" height={280}>
                             <PieChart>
@@ -177,7 +188,7 @@ export default function BusinessPage() {
                                 </Pie>
                                 <Tooltip
                                     contentStyle={TOOLTIP_STYLE}
-                                    formatter={(value?: number) => [`${value ?? 0}%`, 'Adoption']}
+                                    formatter={(value?: number) => [`${value ?? 0}%`, 'Part des actifs']}
                                 />
                                 <Legend
                                     wrapperStyle={LEGEND_STYLE}
@@ -185,53 +196,6 @@ export default function BusinessPage() {
                                     iconType={LEGEND_ICON_TYPE}
                                 />
                             </PieChart>
-                        </ResponsiveContainer>
-                    </Card>
-                </Grid>
-
-                {/* Revenue vs Target (grouped BarChart) */}
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card sx={{ p: 2, height: '100%' }}>
-                        <Typography variant="h6" component="p" gutterBottom>
-                            Revenus vs Objectif
-                        </Typography>
-                        <ResponsiveContainer width="100%" height={280}>
-                            <BarChart data={data.revenueVsTarget}>
-                                <CartesianGrid stroke={GRID_STROKE} strokeDasharray={GRID_DASH} />
-                                <XAxis
-                                    dataKey="date"
-                                    tick={AXIS_TICK_STYLE}
-                                    axisLine={AXIS_LINE_STYLE}
-                                />
-                                <YAxis
-                                    tick={AXIS_TICK_STYLE}
-                                    axisLine={AXIS_LINE_STYLE}
-                                    tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
-                                />
-                                <Tooltip
-                                    contentStyle={TOOLTIP_STYLE}
-                                    formatter={(value?: number) => [`${(value ?? 0).toLocaleString('fr-FR')} €`, '']}
-                                />
-                                <Legend
-                                    wrapperStyle={LEGEND_STYLE}
-                                    iconSize={LEGEND_ICON_SIZE}
-                                    iconType={LEGEND_ICON_TYPE}
-                                />
-                                <Bar
-                                    dataKey="actual"
-                                    name="Réalisé"
-                                    fill="#2563EB"
-                                    radius={[4, 4, 0, 0]}
-                                    animationDuration={ANIMATION_DURATION}
-                                />
-                                <Bar
-                                    dataKey="target"
-                                    name="Objectif"
-                                    fill="#E2E8F0"
-                                    radius={[4, 4, 0, 0]}
-                                    animationDuration={ANIMATION_DURATION}
-                                />
-                            </BarChart>
                         </ResponsiveContainer>
                     </Card>
                 </Grid>

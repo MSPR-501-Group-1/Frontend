@@ -61,9 +61,14 @@ export type KPIStatus = 'success' | 'warning' | 'error';
 export interface BusinessKPI {
     id: string;
     label: string;
+    description?: string;
     value: string | number;
     unit?: string;
+    comparedValue?: string | number | null;
+    comparedUnit?: string;
     trend?: number;       // percentage variation (positive = up)
+    trendUnit?: '%' | 'pts';
+    trendPositiveIsGood?: boolean;
     target?: number;
     status: KPIStatus;
 }

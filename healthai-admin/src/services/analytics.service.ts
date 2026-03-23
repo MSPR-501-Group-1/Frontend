@@ -5,7 +5,14 @@ import type { AnalyticsPageData } from '@/types';
 interface FitnessMetricsPayload {
     dailyMetrics: Array<{ jour: string; total_minutes: number | string }>;
     averageSessionsPerWeek: number | string | null;
+    averageSessionsPerWeekTrend?: number | string | null;
+    previousAverageSessionsPerWeek?: number | string | null;
     averageDuration: number | string | null;
+    averageDurationTrend?: number | string | null;
+    previousAverageDuration?: number | string | null;
+    totalMinutes?: number | string | null;
+    totalMinutesTrend?: number | string | null;
+    previousTotalMinutes?: number | string | null;
     distribution?: Array<{ category: string; count: number | string }>;
 }
 
@@ -33,13 +40,62 @@ export async function fetchFitnessData(range?: string): Promise<AnalyticsPageDat
     // To be sure that the dates are in chronological order
     timeSeries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // Total minutes calculated
-    const totalMinutes = daily.reduce((s, p) => s + Number(p.total_minutes ?? 0), 0);
+    // Fallback: compute total minutes from daily points if API did not provide aggregate.
+    const totalMinutes = payload.totalMinutes !== undefined && payload.totalMinutes !== null
+        ? Number(payload.totalMinutes)
+        : daily.reduce((s, p) => s + Number(p.total_minutes ?? 0), 0);
+
+    const sessionsTrend = payload.averageSessionsPerWeekTrend !== undefined && payload.averageSessionsPerWeekTrend !== null
+        ? Number(payload.averageSessionsPerWeekTrend)
+        : undefined;
+    const avgDurationTrend = payload.averageDurationTrend !== undefined && payload.averageDurationTrend !== null
+        ? Number(payload.averageDurationTrend)
+        : undefined;
+    const totalMinutesTrend = payload.totalMinutesTrend !== undefined && payload.totalMinutesTrend !== null
+        ? Number(payload.totalMinutesTrend)
+        : undefined;
 
     const kpis = [
-        { id: 'sessions-week', label: 'Sessions / semaine', value: Number(payload.averageSessionsPerWeek ?? 0), status: 'success' } as const,
-        { id: 'avg-duration', label: 'Durée moyenne', value: Number(payload.averageDuration ?? 0), unit: 'min', status: 'success' } as const,
-        { id: 'total-duration-period', label: 'Durée totale sur la période', value: totalMinutes, unit: 'min', status: 'success' } as const,
+        {
+            id: 'sessions-week',
+            label: 'Sessions / semaine',
+            description: 'Nombre moyen de sessions hebdomadaires sur la fenetre selectionnee.',
+            value: Number(payload.averageSessionsPerWeek ?? 0),
+            comparedValue: payload.previousAverageSessionsPerWeek !== undefined && payload.previousAverageSessionsPerWeek !== null
+                ? Number(payload.previousAverageSessionsPerWeek)
+                : null,
+            trend: sessionsTrend,
+            trendUnit: '%',
+            status: 'success',
+        } as const,
+        {
+            id: 'avg-duration',
+            label: 'Durée moyenne',
+            description: 'Duree moyenne d\'une session workout sur la periode.',
+            value: Number(payload.averageDuration ?? 0),
+            unit: 'min',
+            comparedValue: payload.previousAverageDuration !== undefined && payload.previousAverageDuration !== null
+                ? Number(payload.previousAverageDuration)
+                : null,
+            comparedUnit: 'min',
+            trend: avgDurationTrend,
+            trendUnit: '%',
+            status: 'success',
+        } as const,
+        {
+            id: 'total-duration-period',
+            label: 'Durée totale sur la période',
+            description: 'Somme des minutes d\'activite enregistrees sur la fenetre.',
+            value: totalMinutes,
+            unit: 'min',
+            comparedValue: payload.previousTotalMinutes !== undefined && payload.previousTotalMinutes !== null
+                ? Number(payload.previousTotalMinutes)
+                : null,
+            comparedUnit: 'min',
+            trend: totalMinutesTrend,
+            trendUnit: '%',
+            status: 'success',
+        } as const,
     ] as unknown as import('@/types').BusinessKPI[];
 
     const breakdown = (payload.distribution ?? []).map((d) => ({ name: d.category, value: Number(d.count) }));
