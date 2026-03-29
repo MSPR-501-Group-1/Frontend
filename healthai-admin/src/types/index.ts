@@ -210,6 +210,7 @@ export interface CreateUserPayload {
     first_name: string;
     last_name: string;
     role_type: UserRole;
+    password: string;
 }
 
 // ─── Business KPI page models ───────────────────────────────

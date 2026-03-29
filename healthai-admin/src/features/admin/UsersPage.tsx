@@ -49,6 +49,7 @@ const EMPTY_FORM: CreateUserPayload = {
     first_name: '',
     last_name: '',
     role_type: UserRole.FREEMIUM,
+    password: '',
 };
 
 // ─── Page ───────────────────────────────────────────────────
@@ -100,9 +101,11 @@ export default function UsersPage() {
     }, []);
 
     const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+    const isPasswordValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(form.password);
     const isFormValid = form.first_name.trim().length > 0
         && form.last_name.trim().length > 0
-        && isEmailValid;
+        && isEmailValid
+        && isPasswordValid;
 
     const handleOpenDialog = useCallback(() => {
         setForm(EMPTY_FORM);
@@ -316,6 +319,19 @@ export default function UsersPage() {
                             required
                             fullWidth
                             placeholder="prenom.nom@healthai.fr"
+                        />
+
+                        <TextField
+                            label="Mot de passe"
+                            type="password"
+                            value={form.password}
+                            onChange={(e) => updateField('password', e.target.value)}
+                            error={touched && !isPasswordValid}
+                            helperText={touched && !isPasswordValid
+                                ? '8+ caractères, avec majuscule, minuscule et chiffre'
+                                : ''}
+                            required
+                            fullWidth
                         />
 
                         <FormControl fullWidth required>
