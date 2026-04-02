@@ -25,6 +25,7 @@ import PartnerUsageChart from '@/components/partners/PartnerUsageChart';
 import PartnerTypePieChart from '@/components/partners/PartnerTypePieChart';
 import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
 import { DataTable, FilterBar } from '@/components/shared';
+import { getErrorMessage } from '@/lib/error.utils';
 import type { ExportColumn } from '@/lib/export.utils';
 import type { Partner, PartnerType, PartnerStatus, BusinessKPI } from '@/types';
 import { PARTNER_TYPE_LABELS, PARTNER_STATUS_LABELS } from '@/types';
@@ -63,7 +64,7 @@ export default function PartnersPage() {
     const typeFilterLabelId = 'partners-type-filter-label';
     const statusFilterLabelId = 'partners-status-filter-label';
 
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading, isError, error } = useQuery({
         queryKey: ['partners-dashboard'],
         queryFn: fetchPartnerDashboard,
     });
@@ -170,7 +171,7 @@ export default function PartnersPage() {
 
     // ── Loading / Error states ──
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message="Erreur lors du chargement des partenaires." />;
+    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement des partenaires.')} />;
     if (!data) return null;
 
     return (

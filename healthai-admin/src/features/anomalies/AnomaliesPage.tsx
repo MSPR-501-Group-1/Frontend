@@ -17,6 +17,7 @@ import CorrectionDialog from '@/components/anomalies/CorrectionDialog';
 import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
 import { DataTable, FilterBar, StatsBar } from '@/components/shared';
 import type { ExportColumn } from '@/lib/export.utils';
+import { getErrorMessage } from '@/lib/error.utils';
 import {
     SEVERITY_CONFIG, STATUS_CONFIG, TYPE_LABELS, SEVERITY_ORDER,
 } from '@/lib/anomalies.constants';
@@ -47,7 +48,7 @@ export default function AnomaliesPage() {
     const [dialogOpen, setDialogOpen] = useState(false);
 
     // ── Queries ──
-    const { data: anomalies, isLoading, isError } = useQuery({
+    const { data: anomalies, isLoading, isError, error } = useQuery({
         queryKey: ['anomalies'],
         queryFn: fetchAnomalies,
     });
@@ -61,8 +62,8 @@ export default function AnomaliesPage() {
             setSelectedAnomaly(null);
             useNotificationStore.getState().notify('Anomalie corrigée avec succès', 'success');
         },
-        onError: () => {
-            useNotificationStore.getState().notify('Erreur lors de la correction', 'error');
+        onError: (mutationError) => {
+            useNotificationStore.getState().notify(getErrorMessage(mutationError, 'Erreur lors de la correction'), 'error');
         },
     });
 
@@ -175,7 +176,7 @@ export default function AnomaliesPage() {
 
     // ── Loading / Error ──
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message="Erreur lors du chargement des anomalies." />;
+    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement des anomalies.')} />;
 
     return (
         <Box>

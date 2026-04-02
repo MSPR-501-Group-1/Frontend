@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchAuditLogs } from '@/services/audit.service';
 import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
 import { DataTable, FilterBar, StatsBar } from '@/components/shared';
+import { getErrorMessage } from '@/lib/error.utils';
 import type { ExportColumn } from '@/lib/export.utils';
 import type { AuditLog, AuditAction } from '@/types';
 
@@ -52,7 +53,7 @@ export default function AuditPage() {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
 
-    const { data: logs, isLoading, isError } = useQuery({
+    const { data: logs, isLoading, isError, error } = useQuery({
         queryKey: ['audit-logs'],
         queryFn: fetchAuditLogs,
     });
@@ -119,7 +120,7 @@ export default function AuditPage() {
 
     // ── Loading / Error ──
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message="Erreur lors du chargement des logs d'audit." />;
+    if (isError) return <ErrorState message={getErrorMessage(error, "Erreur lors du chargement des logs d'audit.")} />;
 
     return (
         <Box>

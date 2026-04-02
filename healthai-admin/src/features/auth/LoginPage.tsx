@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Box,
     Card,
@@ -13,35 +13,43 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, LocalHospital } from '@mui/icons-material';
 import { useAuthStore } from '@/stores/auth.store';
-import type { ApiError } from '@/api';
-
-function isApiError(value: unknown): value is ApiError {
-    return typeof value === 'object'
-        && value !== null
-        && 'message' in value
-        && 'status' in value;
-}
+import { AUTH_REDIRECT_MESSAGE_KEY, getErrorMessage } from '@/lib/error.utils';
+import { useNotificationStore } from '@/stores/notification.store';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('admin@healthapp.com');
     const [password, setPassword] = useState('AdminPass!');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [sessionMessage, setSessionMessage] = useState('');
 
     const { login, isLoading } = useAuthStore();
+    const { notify } = useNotificationStore();
+
+    useEffect(() => {
+        try {
+            const message = sessionStorage.getItem(AUTH_REDIRECT_MESSAGE_KEY);
+            if (message) {
+                setSessionMessage(message);
+                notify(message, 'warning');
+                sessionStorage.removeItem(AUTH_REDIRECT_MESSAGE_KEY);
+            }
+        } catch {
+            // Ignore session storage access issues in constrained environments.
+        }
+    }, [notify]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setSessionMessage('');
 
         try {
             await login(email, password);
         } catch (err) {
-            if (isApiError(err)) {
-                setError(err.message);
-                return;
-            }
-            setError(err instanceof Error ? err.message : 'Erreur de connexion');
+            const userMessage = getErrorMessage(err, 'Connexion impossible. Veuillez reessayer.');
+            setError(userMessage);
+            notify(userMessage, 'error');
         }
     };
 
@@ -72,6 +80,12 @@ export default function LoginPage() {
                     </Box>
 
                     {/* Error alert */}
+                    {sessionMessage && (
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                            {sessionMessage}
+                        </Alert>
+                    )}
+
                     {error && (
                         <Alert severity="error" sx={{ mb: 2 }}>
                             {error}

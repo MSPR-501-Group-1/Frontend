@@ -8,6 +8,7 @@ import DataIngestionAreaChart from '@/components/dashboard/DataIngestionAreaChar
 import AnomalyTrendChart from '@/components/dashboard/AnomalyTrendChart';
 import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
 import type { ExportColumn } from '@/lib/export.utils';
+import { getErrorMessage } from '@/lib/error.utils';
 import { fetchDashboardData } from '@/services/dashboard.service';
 
 // ─── KPI → drill-down route mapping (SRP: config déclarative) ───
@@ -21,14 +22,14 @@ const KPI_DRILLDOWN_ROUTES: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading, isError, error } = useQuery({
         queryKey: ['dashboard'],
         queryFn: fetchDashboardData,
         refetchInterval: 30_000,
     });
 
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message="Erreur lors du chargement du dashboard." />;
+    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement du dashboard.')} />;
     if (!data) return null;
 
     const {

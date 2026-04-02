@@ -11,6 +11,7 @@ import KPICard from '@/components/dashboard/KPICard';
 import DateRangeSelector from '@/components/analytics/DateRangeSelector';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import { fetchBusinessData } from '@/services/business.service';
+import { getErrorMessage } from '@/lib/error.utils';
 import {
     AXIS_TICK_STYLE, AXIS_LINE_STYLE, GRID_STROKE, GRID_DASH,
     TOOLTIP_STYLE, ANIMATION_DURATION,
@@ -32,13 +33,13 @@ export default function BusinessPage() {
         all: 'historique complet',
     };
 
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading, isError, error } = useQuery({
         queryKey: ['analytics', 'business', range],
         queryFn: () => fetchBusinessData(range),
     });
 
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message="Erreur lors du chargement des KPIs business." />;
+    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement des KPIs business.')} />;
     if (!data) return null;
 
     const avgDAU = data.engagementTrend.length > 0

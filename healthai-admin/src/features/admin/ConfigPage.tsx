@@ -32,6 +32,7 @@ import {
 } from '@/services/config.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import { useNotificationStore } from '@/stores/notification.store';
+import { getErrorMessage } from '@/lib/error.utils';
 import { DataSource } from '@/types';
 import type { ValidationRule, AlertThreshold } from '@/types';
 
@@ -63,7 +64,7 @@ export default function ConfigPage() {
     const { notify } = useNotificationStore();
 
     // ── Fetch ──
-    const { data: config, isLoading, isError } = useQuery({
+    const { data: config, isLoading, isError, error } = useQuery({
         queryKey: CONFIG_KEY,
         queryFn: fetchSystemConfig,
     });
@@ -83,7 +84,7 @@ export default function ConfigPage() {
             queryClient.invalidateQueries({ queryKey: CONFIG_KEY });
             notify('Règle de validation mise à jour', 'success');
         },
-        onError: () => notify('Erreur lors de la mise à jour de la règle', 'error'),
+        onError: (mutationError) => notify(getErrorMessage(mutationError, 'Erreur lors de la mise à jour de la règle'), 'error'),
     });
 
     const thresholdMutation = useMutation({
@@ -93,7 +94,7 @@ export default function ConfigPage() {
             queryClient.invalidateQueries({ queryKey: CONFIG_KEY });
             notify('Seuil d\'alerte mis à jour', 'success');
         },
-        onError: () => notify('Erreur lors de la mise à jour du seuil', 'error'),
+        onError: (mutationError) => notify(getErrorMessage(mutationError, 'Erreur lors de la mise à jour du seuil'), 'error'),
     });
 
     const paramsMutation = useMutation({
@@ -103,7 +104,7 @@ export default function ConfigPage() {
             queryClient.invalidateQueries({ queryKey: CONFIG_KEY });
             notify('Paramètres système enregistrés', 'success');
         },
-        onError: () => notify('Erreur lors de l\'enregistrement', 'error'),
+        onError: (mutationError) => notify(getErrorMessage(mutationError, 'Erreur lors de l\'enregistrement'), 'error'),
     });
 
     // ── Handlers ──
@@ -177,7 +178,7 @@ export default function ConfigPage() {
 
     // ── Loading / Error ──
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message="Erreur lors du chargement de la configuration." />;
+    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement de la configuration.')} />;
     if (!config) return null;
 
     return (
