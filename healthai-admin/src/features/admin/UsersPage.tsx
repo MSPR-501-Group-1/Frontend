@@ -22,6 +22,7 @@ import { fetchUsers, createUser, updateUserRole } from '@/services/users.service
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
+import { getErrorMessage } from '@/lib/error.utils';
 import type { AdminUser, CreateUserPayload } from '@/types';
 import { UserRole, ROLE_LABELS } from '@/types';
 
@@ -67,7 +68,7 @@ export default function UsersPage() {
     const [managedUser, setManagedUser] = useState<AdminUser | null>(null);
     const [managedRole, setManagedRole] = useState<UserRole>(UserRole.FREEMIUM);
 
-    const { data: users, isLoading, isError } = useQuery({
+    const { data: users, isLoading, isError, error } = useQuery({
         queryKey: USERS_KEY,
         queryFn: fetchUsers,
     });
@@ -80,7 +81,7 @@ export default function UsersPage() {
             notify(`Utilisateur ${newUser.first_name} ${newUser.last_name} créé avec succès`, 'success');
             handleCloseDialog();
         },
-        onError: () => notify('Erreur lors de la création de l\'utilisateur', 'error'),
+        onError: (mutationError) => notify(getErrorMessage(mutationError, 'Erreur lors de la création de l\'utilisateur'), 'error'),
     });
 
     const updateRoleMutation = useMutation({
@@ -92,7 +93,7 @@ export default function UsersPage() {
             setManagedRole(updatedUser.role_type);
             notify(`Rôle mis à jour pour ${updatedUser.first_name} ${updatedUser.last_name}`, 'success');
         },
-        onError: () => notify('Erreur lors de la mise à jour du rôle', 'error'),
+        onError: (mutationError) => notify(getErrorMessage(mutationError, 'Erreur lors de la mise à jour du rôle'), 'error'),
     });
 
     // ── Form helpers ──
@@ -223,7 +224,7 @@ export default function UsersPage() {
 
     // ── Loading / Error ──
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message="Erreur lors du chargement des utilisateurs." />;
+    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement des utilisateurs.')} />;
 
     return (
         <Box>

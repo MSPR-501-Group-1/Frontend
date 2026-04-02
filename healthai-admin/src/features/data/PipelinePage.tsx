@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchPipelineRuns } from '@/services/pipeline.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import { DataTable, FilterBar, StatsBar } from '@/components/shared';
+import { getErrorMessage } from '@/lib/error.utils';
 import type { PipelineRun, PipelineStatus } from '@/types';
 import { DataSource } from '@/types';
 
@@ -58,7 +59,7 @@ export default function PipelinePage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const statusFilterLabelId = 'pipeline-status-filter-label';
 
-    const { data: runs, isLoading, isError } = useQuery({
+    const { data: runs, isLoading, isError, error } = useQuery({
         queryKey: ['pipeline-runs'],
         queryFn: fetchPipelineRuns,
         // Polling toutes les 15s — le pipeline nécessite un suivi plus fréquent
@@ -159,7 +160,7 @@ export default function PipelinePage() {
 
     // ── Loading / Error ──
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message="Erreur lors du chargement du pipeline ETL." />;
+    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement du pipeline ETL.')} />;
 
     return (
         <Box>

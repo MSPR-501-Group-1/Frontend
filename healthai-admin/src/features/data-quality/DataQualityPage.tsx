@@ -10,6 +10,7 @@ import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import ScoreGauge from '@/components/data-quality/ScoreGauge';
 import DimensionCard from '@/components/data-quality/DimensionCard';
 import { TOOLTIP_STYLE, GRID_DASH } from '@/lib/chart.constants';
+import { getErrorMessage } from '@/lib/error.utils';
 import { scoreToLabel, scoreToStatus, STATUS_MUI_COLOR } from '@/lib/status.utils';
 
 // ─── History chart (co-located — only used here) ────────────
@@ -54,13 +55,15 @@ function HistoryChart({ data }: { data: { date: string; value: number; target?: 
 // ─── Page ───────────────────────────────────────────────────
 
 export default function DataQualityPage() {
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading, isError, error } = useQuery({
         queryKey: ['data-quality', 'score'],
         queryFn: fetchDataQualityScore,
     });
 
     if (isLoading) return <LoadingState />;
-    if (isError || !data) return <ErrorState message="Erreur lors du chargement des données de qualité." />;
+    if (isError || !data) {
+        return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement des données de qualité.')} />;
+    }
 
     return (
         <Box>

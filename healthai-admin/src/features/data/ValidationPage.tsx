@@ -50,6 +50,7 @@ import KPICard from '@/components/dashboard/KPICard';
 import { LoadingState, ErrorState, PageHeader, ExportButton, EmptyState } from '@/components/feedback';
 import { DataTable, FilterBar } from '@/components/shared';
 import { useNotificationStore } from '@/stores/notification.store';
+import { getErrorMessage } from '@/lib/error.utils';
 import type { ExportColumn } from '@/lib/export.utils';
 import { DataSource, ValidationStatus } from '@/types';
 import type { ValidationBatch, ValidationRecord } from '@/types';
@@ -162,7 +163,12 @@ export default function ValidationPage() {
     });
 
     // ── Fetch records when a batch is selected ──
-    const { data: records, isLoading: recordsLoading } = useQuery({
+    const {
+        data: records,
+        isLoading: recordsLoading,
+        isError: recordsError,
+        error: recordsErrorDetails,
+    } = useQuery({
         queryKey: batchRecordsKey(selectedBatch?.id ?? ''),
         queryFn: () => fetchBatchRecords(selectedBatch!.id),
         enabled: !!selectedBatch,
@@ -196,7 +202,7 @@ export default function ValidationPage() {
             setDialogOpen(false);
             setSelectedBatch(null);
         },
-        onError: () => notify("Erreur lors de l'approbation", 'error'),
+        onError: (error) => notify(getErrorMessage(error, "Erreur lors de l'approbation"), 'error'),
     });
 
     const rejectMutation = useMutation({
@@ -208,7 +214,7 @@ export default function ValidationPage() {
             setDialogOpen(false);
             setSelectedBatch(null);
         },
-        onError: () => notify('Erreur lors du rejet', 'error'),
+        onError: (error) => notify(getErrorMessage(error, 'Erreur lors du rejet'), 'error'),
     });
 
     const correctMutation = useMutation({
@@ -219,7 +225,7 @@ export default function ValidationPage() {
             notify(`Record ${recordId} corrigé`, 'success');
             setEditingCell(null);
         },
-        onError: () => notify('Erreur lors de la correction', 'error'),
+        onError: (error) => notify(getErrorMessage(error, 'Erreur lors de la correction'), 'error'),
     });
 
     const dismissMutation = useMutation({
@@ -228,7 +234,7 @@ export default function ValidationPage() {
             queryClient.invalidateQueries({ queryKey: batchRecordsKey(selectedBatch!.id) });
             notify(`Record ${recordId} ignoré`, 'info');
         },
-        onError: () => notify('Erreur lors du dismiss', 'error'),
+        onError: (error) => notify(getErrorMessage(error, 'Erreur lors du dismiss'), 'error'),
     });
 
     // ── Handlers ──
@@ -560,6 +566,8 @@ export default function ValidationPage() {
                 {/* Records DataGrid */}
                 {recordsLoading ? (
                     <LoadingState />
+                ) : recordsError ? (
+                    <ErrorState message={getErrorMessage(recordsErrorDetails, 'Erreur lors du chargement des records KO.')} />
                 ) : !records?.length ? (
                     <EmptyState message="Aucun enregistrement KO pour ce batch." />
                 ) : (
