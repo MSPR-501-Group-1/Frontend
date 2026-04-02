@@ -73,12 +73,14 @@ export function RequireRole({ children, roles }: RequireRoleProps) {
 export function RedirectIfAuth({ children }: Props) {
     const hydrated = useAuthHydrated();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const user = useAuthStore((s) => s.user);
 
     if (!hydrated) {
         return <LoadingScreen />;
     }
 
-    if (isAuthenticated) {
+    // Avoid redirect loops if a stale auth flag is persisted without user payload.
+    if (isAuthenticated && user) {
         return <Navigate to="/" replace />;
     }
 

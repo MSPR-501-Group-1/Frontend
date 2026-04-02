@@ -18,6 +18,8 @@
  * @see https://react.dev/learn/synchronizing-with-effects#fetching-data (React docs on data fetching)
  */
 
+import { AUTH_REDIRECT_MESSAGE_KEY } from '@/lib/error.utils';
+
 // ─── Types ──────────────────────────────────────────────────
 
 export interface ApiError {
@@ -29,11 +31,14 @@ export interface ApiError {
 export interface RequestOptions extends Omit<RequestInit, 'body'> {
     params?: Record<string, string | number | boolean | undefined>;
     body?: unknown;
+    timeoutMs?: number;
 }
 
 // ─── Configuration ──────────────────────────────────────────
 
 const RAW_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const DEFAULT_TIMEOUT_MS = 15_000;
+const PUBLIC_AUTH_ENDPOINTS = new Set(['/auth/login', '/auth/register']);
 
 function resolveBaseUrl(value: unknown): string {
     if (typeof value !== 'string') return '/api';
@@ -107,22 +112,47 @@ function getAuthToken(): string | null {
     return null;
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
+function normalizeRequestPath(path: string): string {
+    const [withoutQuery] = path.split('?');
+    const trimmed = withoutQuery.trim();
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
+function shouldRedirectOnUnauthorized(path: string): boolean {
+    return !PUBLIC_AUTH_ENDPOINTS.has(normalizeRequestPath(path));
+}
+
+async function handleResponse<T>(response: Response, requestPath: string): Promise<T> {
     if (!response.ok) {
         let message = response.statusText;
+        let details: unknown;
         try {
-            const body = await response.json();
-            message = body.message ?? body.error ?? message;
+            const body = await response.json() as Record<string, unknown>;
+            details = body;
+            const bodyMessage = typeof body.message === 'string'
+                ? body.message
+                : typeof body.error === 'string'
+                    ? body.error
+                    : null;
+            if (bodyMessage) {
+                message = bodyMessage;
+            }
         } catch { /* response body is not JSON */ }
 
-        const error: ApiError = { status: response.status, message };
+        const error: ApiError = { status: response.status, message, details };
 
         // Centralised side-effects for specific HTTP codes
-        if (response.status === 401) {
+        if (response.status === 401 && shouldRedirectOnUnauthorized(requestPath)) {
             // Clear persisted auth (both storages) and redirect to login
             try { localStorage.removeItem('healthai-auth'); } catch { }
             try { sessionStorage.removeItem('healthai-auth'); } catch { }
-            window.location.href = '/login';
+            try {
+                sessionStorage.setItem(AUTH_REDIRECT_MESSAGE_KEY, message || 'Session expirée');
+            } catch { /* ignore storage errors */ }
+
+            if (window.location.pathname !== '/login') {
+                window.location.assign('/login');
+            }
         }
 
         throw error;
@@ -137,7 +167,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
 // ─── Public API ─────────────────────────────────────────────
 
 async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
-    const { params, body, headers: extraHeaders, ...rest } = options;
+    const {
+        params,
+        body,
+        headers: extraHeaders,
+        timeoutMs = DEFAULT_TIMEOUT_MS,
+        signal: externalSignal,
+        ...rest
+    } = options;
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -150,14 +187,53 @@ async function request<T>(method: string, path: string, options: RequestOptions 
         (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(buildUrl(path, params), {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-        ...rest,
-    });
+    const abortController = new AbortController();
+    let didTimeout = false;
+    const timeoutId = timeoutMs > 0
+        ? window.setTimeout(() => {
+            didTimeout = true;
+            abortController.abort();
+        }, timeoutMs)
+        : undefined;
 
-    return handleResponse<T>(response);
+    if (externalSignal) {
+        if (externalSignal.aborted) {
+            abortController.abort();
+        } else {
+            externalSignal.addEventListener('abort', () => abortController.abort(), { once: true });
+        }
+    }
+
+    let response: Response;
+    try {
+        response = await fetch(buildUrl(path, params), {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+            signal: abortController.signal,
+            ...rest,
+        });
+    } catch (error) {
+        if (didTimeout) {
+            throw {
+                status: 408,
+                message: 'Le serveur met trop de temps à répondre. Réessayez dans quelques instants.',
+                details: error,
+            } as ApiError;
+        }
+
+        throw {
+            status: 0,
+            message: 'Impossible de contacter le serveur. Vérifiez votre connexion puis réessayez.',
+            details: error,
+        } as ApiError;
+    } finally {
+        if (timeoutId !== undefined) {
+            window.clearTimeout(timeoutId);
+        }
+    }
+
+    return handleResponse<T>(response, path);
 }
 
 export const apiClient = {
