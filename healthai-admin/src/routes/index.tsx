@@ -19,7 +19,9 @@ const AnomaliesPage = lazy(() => import('@/features/anomalies/AnomaliesPage'));
 const ValidationPage = lazy(() => import('@/features/data/ValidationPage'));
 
 // Analytics
+const NutritionPage = lazy(() => import('@/features/analytics/NutritionPage'));
 const FitnessPage = lazy(() => import('@/features/analytics/FitnessPage'));
+const BiometricPage = lazy(() => import('@/features/analytics/BiometricPage'));
 const BusinessPage = lazy(() => import('@/features/analytics/BusinessPage'));
 
 // Parteners B2B
@@ -113,10 +115,26 @@ export const router = createBrowserRouter([
             { path: 'biometric', element: <Navigate to="/analytics/biometric" replace /> },
 
             {
+                path: 'analytics/nutrition',
+                element: (
+                    <RequireRole roles={[...ANALYTICS_ROLES]}>
+                        <Page><NutritionPage /></Page>
+                    </RequireRole>
+                ),
+            },
+            {
                 path: 'analytics/fitness',
                 element: (
                     <RequireRole roles={[...ANALYTICS_ROLES]}>
                         <Page><FitnessPage /></Page>
+                    </RequireRole>
+                ),
+            },
+            {
+                path: 'analytics/biometric',
+                element: (
+                    <RequireRole roles={[...ANALYTICS_ROLES]}>
+                        <Page><BiometricPage /></Page>
                     </RequireRole>
                 ),
             },

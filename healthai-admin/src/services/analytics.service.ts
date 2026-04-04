@@ -1,6 +1,6 @@
 import { apiClient } from '@/api';
 import { format } from 'date-fns';
-import type { AnalyticsPageData } from '@/types';
+import type { AnalyticsPageData, DateRange } from '@/types';
 
 interface FitnessMetricsPayload {
     dailyMetrics: Array<{ jour: string; total_minutes: number | string }>;
@@ -21,12 +21,35 @@ interface FitnessMetricsResponse {
     data?: FitnessMetricsPayload;
 }
 
+interface AnalyticsResponseEnvelope {
+    success?: boolean;
+    data?: AnalyticsPageData;
+}
+
 function normalizeFitnessPayload(resp: FitnessMetricsResponse | FitnessMetricsPayload): FitnessMetricsPayload {
     return (resp as FitnessMetricsResponse).data ?? (resp as FitnessMetricsPayload);
 }
 
+function normalizeAnalyticsPayload(resp: AnalyticsResponseEnvelope | AnalyticsPageData): AnalyticsPageData {
+    return (resp as AnalyticsResponseEnvelope).data ?? (resp as AnalyticsPageData);
+}
+
+export async function fetchNutritionData(range: DateRange = 'all'): Promise<AnalyticsPageData> {
+    const raw = await apiClient.get<AnalyticsResponseEnvelope | AnalyticsPageData>('/analytics/nutrition', {
+        params: { range },
+    });
+    return normalizeAnalyticsPayload(raw);
+}
+
+export async function fetchBiometricData(range: DateRange = 'all'): Promise<AnalyticsPageData> {
+    const raw = await apiClient.get<AnalyticsResponseEnvelope | AnalyticsPageData>('/analytics/biometric', {
+        params: { range },
+    });
+    return normalizeAnalyticsPayload(raw);
+}
+
 // Fetch fitness analytics from real backend endpoint
-export async function fetchFitnessData(range?: string): Promise<AnalyticsPageData> {
+export async function fetchFitnessData(range: DateRange = 'all'): Promise<AnalyticsPageData> {
     const raw = await apiClient.get<FitnessMetricsResponse | FitnessMetricsPayload>('/metrics/fitness', { params: { range } });
     const payload = normalizeFitnessPayload(raw);
 

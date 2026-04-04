@@ -87,9 +87,21 @@ export const NAV_SECTIONS: NavItem[] = [
         roles: ADMIN_ROLES,
         children: [
             {
+                key: 'nutrition',
+                label: 'Nutrition',
+                path: '/analytics/nutrition',
+                roles: ANALYTICS_ROLES,
+            },
+            {
                 key: 'fitness',
                 label: 'Activité physique',
                 path: '/analytics/fitness',
+                roles: ANALYTICS_ROLES,
+            },
+            {
+                key: 'biometric',
+                label: 'Biométrique',
+                path: '/analytics/biometric',
                 roles: ANALYTICS_ROLES,
             },
             {
