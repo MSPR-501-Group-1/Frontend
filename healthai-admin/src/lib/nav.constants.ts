@@ -84,7 +84,7 @@ export const NAV_SECTIONS: NavItem[] = [
         key: 'analytics',
         label: 'Analytics',
         icon: 'BarChart',
-        roles: ADMIN_ROLES,
+        roles: ANALYTICS_ROLES,
         children: [
             {
                 key: 'nutrition',
