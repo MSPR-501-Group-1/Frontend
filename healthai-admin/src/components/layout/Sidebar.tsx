@@ -25,7 +25,7 @@ import {
     ChevronLeft as ChevronLeftIcon,
     LocalHospital,
 } from '@mui/icons-material';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import {
     NAV_SECTIONS,
@@ -75,7 +75,7 @@ export default function Sidebar({ open, width, collapsedWidth, onToggle, variant
     const user = useAuthStore((s) => s.user);
 
     // Pre-expand sections that contain the currently active route
-    const initialExpanded = useMemo<Set<string>>(() => {
+    const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
         const active = new Set<string>(['data', 'analytics']);
         NAV_SECTIONS.forEach((section) => {
             if (isGroup(section)) {
@@ -84,9 +84,7 @@ export default function Sidebar({ open, width, collapsedWidth, onToggle, variant
             }
         });
         return active;
-    }, []);
-
-    const [expandedSections, setExpandedSections] = useState<Set<string>>(initialExpanded);
+    });
 
     /** Sections filtered by current user's role */
     const visibleSections = useMemo(() => {

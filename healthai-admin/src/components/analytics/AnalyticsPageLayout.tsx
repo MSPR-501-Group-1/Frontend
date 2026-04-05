@@ -153,10 +153,6 @@ export default function AnalyticsPageLayout({
 // ─── Internal sub-components (co-located, not re-exported) ──
 
 function BreakdownPieChart({ data, title }: { data: CategoryDataPoint[]; title: string }) {
-    // Log data for debugging tooltip mismatches
-    // eslint-disable-next-line no-console
-    console.debug('BreakdownPieChart data', data);
-
     const total = data.reduce((s, d) => s + Number(d.value ?? 0), 0);
     return (
         <Card sx={{ p: 2.5, height: '100%' }}>

@@ -21,23 +21,27 @@ export default function LoginPage() {
     const [password, setPassword] = useState('AdminPass!');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
-    const [sessionMessage, setSessionMessage] = useState('');
+    const [sessionMessage, setSessionMessage] = useState(() => {
+        try {
+            return sessionStorage.getItem(AUTH_REDIRECT_MESSAGE_KEY) ?? '';
+        } catch {
+            return '';
+        }
+    });
 
     const { login, isLoading } = useAuthStore();
     const { notify } = useNotificationStore();
 
     useEffect(() => {
+        if (!sessionMessage) return;
+
+        notify(sessionMessage, 'warning');
         try {
-            const message = sessionStorage.getItem(AUTH_REDIRECT_MESSAGE_KEY);
-            if (message) {
-                setSessionMessage(message);
-                notify(message, 'warning');
-                sessionStorage.removeItem(AUTH_REDIRECT_MESSAGE_KEY);
-            }
+            sessionStorage.removeItem(AUTH_REDIRECT_MESSAGE_KEY);
         } catch {
             // Ignore session storage access issues in constrained environments.
         }
-    }, [notify]);
+    }, [notify, sessionMessage]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

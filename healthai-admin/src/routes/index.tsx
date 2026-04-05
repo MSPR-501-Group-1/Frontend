@@ -46,9 +46,9 @@ const NotFoundPage = lazy(() => import('@/features/errors/NotFoundPage'));
 // Suspense wrapper
 // ---------------------------------------------------------------------------
 
-function Page({ children }: { children: React.ReactNode }) {
-    return <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
-}
+const withPageLoader = (element: React.ReactNode) => (
+    <Suspense fallback={<LoadingScreen />}>{element}</Suspense>
+);
 
 // ---------------------------------------------------------------------------
 // Router
@@ -60,13 +60,13 @@ export const router = createBrowserRouter([
         path: '/login',
         element: (
             <RedirectIfAuth>
-                <Page><LoginPage /></Page>
+                {withPageLoader(<LoginPage />)}
             </RedirectIfAuth>
         ),
     },
     {
         path: '/403',
-        element: <Page><ForbiddenPage /></Page>,
+        element: withPageLoader(<ForbiddenPage />),
     },
     {
         path: '/',
@@ -78,13 +78,13 @@ export const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <Page><DashboardPage /></Page>,
+                element: withPageLoader(<DashboardPage />),
             },
             {
                 path: 'data/pipeline',
                 element: (
                     <RequireRole roles={[...DATA_ROLES]}>
-                        <Page><PipelinePage /></Page>
+                        {withPageLoader(<PipelinePage />)}
                     </RequireRole>
                 ),
             },
@@ -92,7 +92,7 @@ export const router = createBrowserRouter([
                 path: 'data/quality',
                 element: (
                     <RequireRole roles={[...DATA_ROLES]}>
-                        <Page><DataQualityPage /></Page>
+                        {withPageLoader(<DataQualityPage />)}
                     </RequireRole>
                 ),
             },
@@ -100,7 +100,7 @@ export const router = createBrowserRouter([
                 path: 'data/anomalies',
                 element: (
                     <RequireRole roles={[...DATA_ROLES]}>
-                        <Page><AnomaliesPage /></Page>
+                        {withPageLoader(<AnomaliesPage />)}
                     </RequireRole>
                 ),
             },
@@ -108,7 +108,7 @@ export const router = createBrowserRouter([
                 path: 'data/validation',
                 element: (
                     <RequireRole roles={[...DATA_ROLES]}>
-                        <Page><ValidationPage /></Page>
+                        {withPageLoader(<ValidationPage />)}
                     </RequireRole>
                 ),
             },
@@ -124,7 +124,7 @@ export const router = createBrowserRouter([
                 path: 'analytics/nutrition',
                 element: (
                     <RequireRole roles={[...ANALYTICS_ROLES]}>
-                        <Page><NutritionPage /></Page>
+                        {withPageLoader(<NutritionPage />)}
                     </RequireRole>
                 ),
             },
@@ -132,7 +132,7 @@ export const router = createBrowserRouter([
                 path: 'analytics/fitness',
                 element: (
                     <RequireRole roles={[...ANALYTICS_ROLES]}>
-                        <Page><FitnessPage /></Page>
+                        {withPageLoader(<FitnessPage />)}
                     </RequireRole>
                 ),
             },
@@ -140,7 +140,7 @@ export const router = createBrowserRouter([
                 path: 'analytics/biometric',
                 element: (
                     <RequireRole roles={[...ANALYTICS_ROLES]}>
-                        <Page><BiometricPage /></Page>
+                        {withPageLoader(<BiometricPage />)}
                     </RequireRole>
                 ),
             },
@@ -148,7 +148,7 @@ export const router = createBrowserRouter([
                 path: 'analytics/business',
                 element: (
                     <RequireRole roles={[...ANALYTICS_BUSINESS_ROLES]}>
-                        <Page><BusinessPage /></Page>
+                        {withPageLoader(<BusinessPage />)}
                     </RequireRole>
                 ),
             },
@@ -157,7 +157,7 @@ export const router = createBrowserRouter([
                 path: 'partners',
                 element: (
                     <RequireRole roles={[...PARTNER_ROLES]}>
-                        <Page><PartnersPage /></Page>
+                        {withPageLoader(<PartnersPage />)}
                     </RequireRole>
                 ),
             },
@@ -166,7 +166,7 @@ export const router = createBrowserRouter([
                 path: 'admin/users',
                 element: (
                     <RequireRole roles={[...ADMIN_ROLES]}>
-                        <Page><UsersPage /></Page>
+                        {withPageLoader(<UsersPage />)}
                     </RequireRole>
                 ),
             },
@@ -174,7 +174,7 @@ export const router = createBrowserRouter([
                 path: 'admin/audit',
                 element: (
                     <RequireRole roles={[...AUDIT_ROLES]}>
-                        <Page><AuditPage /></Page>
+                        {withPageLoader(<AuditPage />)}
                     </RequireRole>
                 ),
             },
@@ -182,14 +182,14 @@ export const router = createBrowserRouter([
                 path: 'admin/config',
                 element: (
                     <RequireRole roles={[...ADMIN_ROLES]}>
-                        <Page><ConfigPage /></Page>
+                        {withPageLoader(<ConfigPage />)}
                     </RequireRole>
                 ),
             },
 
             {
                 path: '*',
-                element: <Page><NotFoundPage /></Page>,
+                element: withPageLoader(<NotFoundPage />),
             },
         ],
     },

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",
+    "verify": "npm run typecheck && npm run lint && npm run build",
     "preview": "vite preview",
     "audit:a11y": "node scripts/run-lighthouse-batch.mjs",
     "audit:a11y:normal": "node scripts/run-lighthouse-batch.mjs --ui-high-contrast=false --ui-theme=light",

@@ -1,5 +1,29 @@
 # React + TypeScript + Vite
 
+## Build Prerequisites
+
+- Node.js: 22.12+ (recommended) or 20.19+
+- npm: 10+
+
+If Node.js is below the required version, Vite can still build but will print an environment warning.
+
+## NPM Verification Protocol
+
+Run these commands before delivery:
+
+```bash
+npm ci
+npm run typecheck
+npm run lint
+npm run build
+```
+
+Or run the combined quality gate:
+
+```bash
+npm run verify
+```
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
