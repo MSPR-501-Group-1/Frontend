@@ -1,5 +1,5 @@
 /**
- * PartnerUsageChart — horizontal bar chart showing API calls by partner.
+ * PartnerUsageChart — horizontal bar chart showing activity events by partner.
  *
  * Reuses shared chart constants (DRY) and useChartTheme for dark mode.
  * Pattern identical to AnomaliesBarChart — consistent visual language.
@@ -68,7 +68,7 @@ export default function PartnerUsageChart({ data, title, subtitle }: PartnerUsag
                         />
                         <Tooltip
                             contentStyle={TOOLTIP_STYLE}
-                            formatter={(v) => [`${Number(v).toLocaleString('fr-FR')} appels`, 'API Calls']}
+                            formatter={(v) => [`${Number(v).toLocaleString('fr-FR')} événements`, 'Activité 30j']}
                         />
                         <Bar
                             dataKey="value"
