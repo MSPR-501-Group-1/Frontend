@@ -5,8 +5,14 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { RequireAuth, RequireRole, RedirectIfAuth } from './guards';
 import AppLayout from '@/components/layout/AppLayout';
 import LoadingScreen from '@/components/feedback/LoadingScreen';
-import { DATA_ROLES, ANALYTICS_ROLES, PARTNER_ROLES, ADMIN_ROLES, AUDIT_ROLES } from '@/lib/nav.constants';
-import { UserRole } from '@/types';
+import {
+    DATA_ROLES,
+    ANALYTICS_ROLES,
+    ANALYTICS_BUSINESS_ROLES,
+    PARTNER_ROLES,
+    ADMIN_ROLES,
+    AUDIT_ROLES,
+} from '@/lib/nav.constants';
 
 
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
@@ -24,7 +30,7 @@ const FitnessPage = lazy(() => import('@/features/analytics/FitnessPage'));
 const BiometricPage = lazy(() => import('@/features/analytics/BiometricPage'));
 const BusinessPage = lazy(() => import('@/features/analytics/BusinessPage'));
 
-// Parteners B2B
+// Partners B2B
 const PartnersPage = lazy(() => import('@/features/partners/PartnersPage'));
 
 // Administration
@@ -141,7 +147,7 @@ export const router = createBrowserRouter([
             {
                 path: 'analytics/business',
                 element: (
-                    <RequireRole roles={[UserRole.ADMIN, UserRole.PREMIUM_PLUS, UserRole.B2B]}>
+                    <RequireRole roles={[...ANALYTICS_BUSINESS_ROLES]}>
                         <Page><BusinessPage /></Page>
                     </RequireRole>
                 ),

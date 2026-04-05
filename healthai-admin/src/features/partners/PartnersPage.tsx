@@ -1,20 +1,13 @@
-/**
- * PartnersPage — full B2B partner management page.
- *
- * Architecture layers consumed:
- *   types/ → mocks/ → services/ → [useQuery] → components/ → this page
- *
- * Patterns:
- *   - React Query for data fetching + polling
- *   - DataGrid MUI for tabular data with filters & pagination
- *   - Reusable components: KPICard, ExportButton, PageHeader (DRY)
- *   - Charts: PartnerUsageChart, PartnerTypePieChart (SRP per chart)
- */
-
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
-    Box, Grid, Chip, FormControl, InputLabel,
-    Select, MenuItem, Typography,
+    Box,
+    Chip,
+    FormControl,
+    Grid,
+    InputLabel,
+    MenuItem,
+    Select,
+    Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import type { GridColDef } from '@mui/x-data-grid';
@@ -22,45 +15,43 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchPartnerDashboard } from '@/services/partners.service';
 import KPICard from '@/components/dashboard/KPICard';
 import PartnerUsageChart from '@/components/partners/PartnerUsageChart';
-import PartnerTypePieChart from '@/components/partners/PartnerTypePieChart';
+import PartnerStatusPieChart from '@/components/partners/PartnerStatusPieChart';
 import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
 import { DataTable, FilterBar } from '@/components/shared';
 import type { ExportColumn } from '@/lib/export.utils';
-import type { Partner, PartnerType, PartnerStatus, BusinessKPI } from '@/types';
-import { PARTNER_TYPE_LABELS, PARTNER_STATUS_LABELS } from '@/types';
+import type { Partner, PartnerStatus, BusinessKPI } from '@/types';
+import { PARTNER_STATUS_LABELS } from '@/types';
 
-// ─── Display config (SRP: visual mapping isolated from logic) ──
-
-const STATUS_COLOR: Record<PartnerStatus, 'success' | 'warning' | 'error' | 'default'> = {
+const STATUS_COLOR: Record<PartnerStatus, 'success' | 'default'> = {
     active: 'success',
-    trial: 'warning',
-    suspended: 'error',
-    churned: 'default',
+    inactive: 'default',
 };
-
-// ─── Export columns (DRY: declared once, used for CSV & PDF) ──
 
 const EXPORT_COLUMNS: ExportColumn[] = [
     { field: 'name', headerName: 'Partenaire' },
-    { field: 'type', headerName: 'Type' },
-    { field: 'status', headerName: 'Statut' },
-    { field: 'usersCount', headerName: 'Utilisateurs' },
-    { field: 'apiCallsMonth', headerName: 'API Calls / mois' },
-    { field: 'contractStart', headerName: 'Début contrat' },
-    { field: 'contractEnd', headerName: 'Fin contrat' },
+    { field: 'status', headerName: 'Statut activite' },
+    { field: 'usersCount', headerName: 'Utilisateurs lies' },
+    { field: 'b2bUsersCount', headerName: 'Utilisateurs role B2B' },
+    { field: 'activeUsers30d', headerName: 'Utilisateurs actifs (30j)' },
+    { field: 'logins30d', headerName: 'Connexions (30j)' },
+    { field: 'workoutSessions30d', headerName: 'Sessions workout (30j)' },
+    { field: 'activityEvents30d', headerName: 'Evenements activite (30j)' },
+    { field: 'lastActivity', headerName: 'Derniere activite' },
 ];
 
-// ─── Filters ────────────────────────────────────────────────
-
-type TypeFilter = 'all' | PartnerType;
 type StatusFilter = 'all' | PartnerStatus;
 
-// ─── Page ───────────────────────────────────────────────────
+const formatNumber = (value: number): string => value.toLocaleString('fr-FR');
+
+const formatNullableDate = (value: string | null): string => {
+    if (!value) return 'Non disponible';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return 'Non disponible';
+    return parsed.toLocaleDateString('fr-FR');
+};
 
 export default function PartnersPage() {
-    const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-    const typeFilterLabelId = 'partners-type-filter-label';
     const statusFilterLabelId = 'partners-status-filter-label';
 
     const { data, isLoading, isError } = useQuery({
@@ -68,107 +59,99 @@ export default function PartnersPage() {
         queryFn: fetchPartnerDashboard,
     });
 
-    // ── Filtered rows ──
+    const statusOptions = useMemo<PartnerStatus[]>(() => {
+        const unique = new Set<PartnerStatus>();
+        data?.partners.forEach((partner) => unique.add(partner.status));
+        return Array.from(unique);
+    }, [data]);
+
     const filteredPartners = useMemo(() => {
         if (!data) return [];
-        return data.partners.filter((p) => {
-            if (typeFilter !== 'all' && p.type !== typeFilter) return false;
-            if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+
+        return data.partners.filter((partner) => {
+            if (statusFilter !== 'all' && partner.status !== statusFilter) return false;
             return true;
         });
-    }, [data, typeFilter, statusFilter]);
+    }, [data, statusFilter]);
 
-    // ── KPIs (computed from data — SRP: derived state) ──
     const kpis = useMemo<BusinessKPI[]>(() => {
         if (!data) return [];
-        const { partners } = data;
-        const active = partners.filter((p) => p.status === 'active').length;
-        const totalUsers = partners.reduce((s, p) => s + p.usersCount, 0);
-        const totalCalls = partners.reduce((s, p) => s + p.apiCallsMonth, 0);
-        const avgSatisfaction = partners.length > 0
-            ? Math.round(partners.reduce((s, p) => s + p.satisfactionScore, 0) / partners.length)
-            : 0;
+
+        const activePartners = data.partners.filter((partner) => partner.status === 'active').length;
+        const totalUsers = data.partners.reduce((sum, partner) => sum + partner.usersCount, 0);
+        const totalActiveUsers = data.partners.reduce((sum, partner) => sum + partner.activeUsers30d, 0);
+        const totalActivityEvents = data.partners.reduce((sum, partner) => sum + partner.activityEvents30d, 0);
 
         return [
-            { id: 'active-partners', label: 'Partenaires actifs', value: active, status: 'success' },
-            { id: 'total-users', label: 'Utilisateurs total', value: totalUsers, status: 'success' },
-            { id: 'api-calls', label: 'API Calls / mois', value: `${(totalCalls / 1_000_000).toFixed(1)}M`, status: 'success' },
-            { id: 'satisfaction', label: 'Satisfaction moyenne', value: avgSatisfaction, unit: '%', status: avgSatisfaction >= 80 ? 'success' : 'warning' },
+            { id: 'active-partners', label: 'Partenaires actifs (30j)', value: activePartners, status: 'success' },
+            { id: 'total-users', label: 'Utilisateurs lies', value: totalUsers, status: 'success' },
+            { id: 'active-users', label: 'Utilisateurs actifs (30j)', value: totalActiveUsers, status: 'success' },
+            { id: 'activity-events', label: 'Evenements activite (30j)', value: totalActivityEvents, status: 'success' },
         ];
     }, [data]);
 
-    // ── DataGrid columns ──
     const columns: GridColDef<Partner>[] = useMemo(() => [
-        { field: 'name', headerName: 'Partenaire', width: 180 },
-        {
-            field: 'type',
-            headerName: 'Type',
-            width: 160,
-            renderCell: ({ value }) => (
-                <Chip
-                    label={PARTNER_TYPE_LABELS[value as PartnerType]}
-                    size="small"
-                    variant="outlined"
-                    sx={{ fontWeight: 600 }}
-                />
-            ),
-        },
+        { field: 'name', headerName: 'Partenaire', width: 220 },
         {
             field: 'status',
-            headerName: 'Statut',
-            width: 120,
-            renderCell: ({ value }) => (
-                <Chip
-                    label={PARTNER_STATUS_LABELS[value as PartnerStatus]}
-                    color={STATUS_COLOR[value as PartnerStatus]}
-                    size="small"
-                    sx={{ fontWeight: 600 }}
-                />
-            ),
+            headerName: 'Statut activite',
+            width: 160,
+            renderCell: ({ value }) => {
+                const status = value as PartnerStatus;
+                return (
+                    <Chip
+                        label={PARTNER_STATUS_LABELS[status] ?? status}
+                        color={STATUS_COLOR[status] ?? 'default'}
+                        size="small"
+                        sx={{ fontWeight: 600 }}
+                    />
+                );
+            },
         },
         {
             field: 'usersCount',
-            headerName: 'Utilisateurs',
-            width: 130,
-            valueFormatter: (v: number) => v.toLocaleString('fr-FR'),
+            headerName: 'Utilisateurs lies',
+            width: 160,
+            valueFormatter: (value: number) => formatNumber(value),
         },
         {
-            field: 'apiCallsMonth',
-            headerName: 'API Calls / mois',
+            field: 'b2bUsersCount',
+            headerName: 'Utilisateurs role B2B',
+            width: 190,
+            valueFormatter: (value: number) => formatNumber(value),
+        },
+        {
+            field: 'activeUsers30d',
+            headerName: 'Utilisateurs actifs (30j)',
+            width: 190,
+            valueFormatter: (value: number) => formatNumber(value),
+        },
+        {
+            field: 'logins30d',
+            headerName: 'Connexions (30j)',
             width: 150,
-            valueFormatter: (v: number) => v.toLocaleString('fr-FR'),
+            valueFormatter: (value: number) => formatNumber(value),
         },
         {
-            field: 'contractStart',
-            headerName: 'Début contrat',
-            width: 130,
-            valueFormatter: (v: string) =>
-                new Date(v).toLocaleDateString('fr-FR'),
+            field: 'workoutSessions30d',
+            headerName: 'Sessions workout (30j)',
+            width: 180,
+            valueFormatter: (value: number) => formatNumber(value),
         },
         {
-            field: 'contractEnd',
-            headerName: 'Fin contrat',
-            width: 130,
-            valueFormatter: (v: string) =>
-                new Date(v).toLocaleDateString('fr-FR'),
+            field: 'activityEvents30d',
+            headerName: 'Evenements activite (30j)',
+            width: 190,
+            valueFormatter: (value: number) => formatNumber(value),
         },
         {
-            field: 'satisfactionScore',
-            headerName: 'Satisfaction',
-            width: 120,
-            renderCell: ({ value }) => (
-                <Chip
-                    label={`${value}%`}
-                    color={Number(value) >= 80 ? 'success' : Number(value) >= 60 ? 'warning' : 'error'}
-                    size="small"
-                    variant="outlined"
-                    sx={{ fontWeight: 600 }}
-                />
-            ),
+            field: 'lastActivity',
+            headerName: 'Derniere activite',
+            width: 150,
+            valueFormatter: (value: string | null) => formatNullableDate(value),
         },
     ], []);
 
-    // ── Loading / Error states ──
     if (isLoading) return <LoadingState />;
     if (isError) return <ErrorState message="Erreur lors du chargement des partenaires." />;
     if (!data) return null;
@@ -177,18 +160,17 @@ export default function PartnersPage() {
         <Box>
             <PageHeader
                 title="Partenaires B2B"
-                subtitle="Suivi et pilotage des accès et indicateurs partenaires"
+                subtitle="Vue strictement alimentee par les donnees SQL organisation, login et workout"
                 actions={
                     <ExportButton
                         fileName="partenaires-b2b"
-                        title="Partenaires B2B — HealthAI"
+                        title="Partenaires B2B - HealthAI"
                         columns={EXPORT_COLUMNS}
                         rows={filteredPartners as unknown as Record<string, unknown>[]}
                     />
                 }
             />
 
-            {/* KPI Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 {kpis.map((kpi) => (
                     <Grid key={kpi.id} size={{ xs: 12, sm: 6, md: 3 }}>
@@ -202,64 +184,46 @@ export default function PartnersPage() {
                 ))}
             </Grid>
 
-            {/* Filters */}
             <FilterBar resultCount={filteredPartners.length} resultLabel="partenaire">
-                <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel id={typeFilterLabelId}>Type</InputLabel>
-                    <Select
-                        labelId={typeFilterLabelId}
-                        value={typeFilter}
-                        label="Type"
-                        onChange={(e: SelectChangeEvent) => setTypeFilter(e.target.value as TypeFilter)}
-                    >
-                        <MenuItem value="all">Tous les types</MenuItem>
-                        {Object.entries(PARTNER_TYPE_LABELS).map(([key, label]) => (
-                            <MenuItem key={key} value={key}>{label}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel id={statusFilterLabelId}>Statut</InputLabel>
+                <FormControl size="small" sx={{ minWidth: 220 }}>
+                    <InputLabel id={statusFilterLabelId}>Statut activite</InputLabel>
                     <Select
                         labelId={statusFilterLabelId}
                         value={statusFilter}
-                        label="Statut"
-                        onChange={(e: SelectChangeEvent) => setStatusFilter(e.target.value as StatusFilter)}
+                        label="Statut activite"
+                        onChange={(event: SelectChangeEvent) => setStatusFilter(event.target.value as StatusFilter)}
                     >
                         <MenuItem value="all">Tous les statuts</MenuItem>
-                        {Object.entries(PARTNER_STATUS_LABELS).map(([key, label]) => (
-                            <MenuItem key={key} value={key}>{label}</MenuItem>
+                        {statusOptions.map((status) => (
+                            <MenuItem key={status} value={status}>{PARTNER_STATUS_LABELS[status] ?? status}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
             </FilterBar>
 
-            {/* DataGrid */}
             <DataTable
                 rows={filteredPartners}
                 columns={columns}
                 ariaLabel="Tableau des partenaires B2B"
-                defaultSort={{ field: 'apiCallsMonth', sort: 'desc' }}
+                defaultSort={{ field: 'activityEvents30d', sort: 'desc' }}
             />
 
-            {/* Charts */}
             <Typography variant="h5" sx={{ mb: 2 }}>
-                Analyse d'usage
+                Analyse d'activite
             </Typography>
             <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 7 }}>
                     <PartnerUsageChart
                         data={data.usageByPartner}
-                        title="Appels API par partenaire"
-                        subtitle="Volume mensuel — top partenaires actifs"
+                        title="Evenements d'activite par partenaire"
+                        subtitle="Connexions + sessions workout sur 30 jours"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 5 }}>
-                    <PartnerTypePieChart
-                        data={data.partnerTypesBreakdown}
-                        title="Répartition par type"
-                        subtitle="Distribution des partenaires par catégorie"
+                    <PartnerStatusPieChart
+                        data={data.partnerStatusBreakdown}
+                        title="Repartition par statut d'activite"
+                        subtitle="Partenaires actifs vs inactifs sur 30 jours"
                     />
                 </Grid>
             </Grid>

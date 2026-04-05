@@ -1,8 +1,5 @@
 /**
- * PartnerTypePieChart — donut chart showing partner type distribution.
- *
- * Pattern identical to SourcesPieChart (DRY: same visual conventions).
- * Reuses shared chart constants and useChartTheme for dark mode.
+ * PartnerStatusPieChart — donut chart showing partner activity status distribution.
  */
 
 import { Card, Typography, Box } from '@mui/material';
@@ -15,18 +12,14 @@ import {
 } from '@/lib/chart.constants';
 import type { CategoryDataPoint } from '@/types';
 
-// ─── Props ──────────────────────────────────────────────────
-
-interface PartnerTypePieChartProps {
+interface PartnerStatusPieChartProps {
     data: CategoryDataPoint[];
     title: string;
     subtitle?: string;
 }
 
-// ─── Component ──────────────────────────────────────────────
-
-export default function PartnerTypePieChart({ data, title, subtitle }: PartnerTypePieChartProps) {
-    const total = data.reduce((s, d) => s + d.value, 0);
+export default function PartnerStatusPieChart({ data, title, subtitle }: PartnerStatusPieChartProps) {
+    const total = data.reduce((sum, point) => sum + point.value, 0);
 
     return (
         <Card sx={{ p: 2.5, height: '100%' }}>
@@ -39,7 +32,6 @@ export default function PartnerTypePieChart({ data, title, subtitle }: PartnerTy
                 )}
             </Box>
             <Box sx={{ width: '100%', height: 320, position: 'relative' }} role="img" aria-label={title}>
-                {/* Center label */}
                 <Box
                     sx={{
                         position: 'absolute', top: '42%', left: '50%',
@@ -83,8 +75,8 @@ export default function PartnerTypePieChart({ data, title, subtitle }: PartnerTy
                         </Pie>
                         <Tooltip
                             contentStyle={TOOLTIP_STYLE}
-                            formatter={(v, name) => [
-                                `${v} partenaire${Number(v) > 1 ? 's' : ''}`,
+                            formatter={(value, name) => [
+                                `${value} partenaire${Number(value) > 1 ? 's' : ''}`,
                                 String(name),
                             ]}
                         />

@@ -225,42 +225,31 @@ export interface BusinessPageData {
 
 // ─── Partners B2B models ────────────────────────────────────
 
-export type PartnerType = 'COMPANY' | 'GYM' | 'MUTUAL' | 'NGO' | 'OTHER';
-export type PartnerStatus = 'active' | 'trial' | 'suspended' | 'churned';
-
-export const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
-    COMPANY: 'Entreprise',
-    GYM: 'Salle de sport',
-    MUTUAL: 'Mutuelle',
-    NGO: 'ONG',
-    OTHER: 'Autre',
-};
+export type PartnerStatus = 'active' | 'inactive';
 
 export const PARTNER_STATUS_LABELS: Record<PartnerStatus, string> = {
     active: 'Actif',
-    trial: 'Essai',
-    suspended: 'Suspendu',
-    churned: 'Résilié',
+    inactive: 'Inactif',
 };
 
 export interface Partner {
     id: string;
     name: string;
-    type: PartnerType;
     status: PartnerStatus;
-    contractStart: string;      // ISO date
-    contractEnd: string;        // ISO date
     usersCount: number;
-    apiCallsMonth: number;
-    lastActivity: string;       // ISO date
-    satisfactionScore: number;  // 0–100
+    b2bUsersCount: number;
+    activeUsers30d: number;
+    logins30d: number;
+    workoutSessions30d: number;
+    activityEvents30d: number;
+    lastActivity: string | null;       // ISO date
 }
 
 export interface PartnerDashboardData {
     partners: Partner[];
     usageByPartner: CategoryDataPoint[];
-    partnerTypesBreakdown: CategoryDataPoint[];
-    monthlyApiCalls: TimeSeriesPoint[];
+    partnerStatusBreakdown: CategoryDataPoint[];
+    monthlyActivityEvents: TimeSeriesPoint[];
 }
 
 // ─── Configuration / Validation Rules models ────────────────

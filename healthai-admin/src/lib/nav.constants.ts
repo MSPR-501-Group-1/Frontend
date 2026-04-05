@@ -7,6 +7,7 @@ import { UserRole } from '@/types';
 export const ALL_ROLES = Object.values(UserRole) as UserRole[];
 export const DATA_ROLES = [UserRole.ADMIN, UserRole.PREMIUM_PLUS] as const;
 export const ANALYTICS_ROLES = [UserRole.ADMIN, UserRole.PREMIUM, UserRole.PREMIUM_PLUS, UserRole.B2B] as const;
+export const ANALYTICS_BUSINESS_ROLES = [UserRole.ADMIN, UserRole.PREMIUM_PLUS, UserRole.B2B] as const;
 export const PARTNER_ROLES = [UserRole.ADMIN, UserRole.B2B] as const;
 export const ADMIN_ROLES = [UserRole.ADMIN] as const;
 export const AUDIT_ROLES = [UserRole.ADMIN, UserRole.PREMIUM_PLUS] as const;
@@ -108,7 +109,7 @@ export const NAV_SECTIONS: NavItem[] = [
                 key: 'business',
                 label: 'KPIs Business',
                 path: '/analytics/business',
-                roles: [UserRole.ADMIN, UserRole.PREMIUM_PLUS, UserRole.B2B],
+                roles: ANALYTICS_BUSINESS_ROLES,
             },
         ],
     } satisfies NavGroupSection,
