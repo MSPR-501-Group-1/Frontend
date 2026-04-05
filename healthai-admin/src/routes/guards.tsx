@@ -15,8 +15,6 @@ function useAuthHydrated(): boolean {
         const unsubHydrate = useAuthStore.persist.onHydrate(() => setHydrated(false));
         const unsubFinish = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
 
-        setHydrated(useAuthStore.persist.hasHydrated());
-
         return () => {
             unsubHydrate();
             unsubFinish();

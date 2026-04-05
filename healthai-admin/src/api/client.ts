@@ -144,8 +144,8 @@ async function handleResponse<T>(response: Response, requestPath: string): Promi
         // Centralised side-effects for specific HTTP codes
         if (response.status === 401 && shouldRedirectOnUnauthorized(requestPath)) {
             // Clear persisted auth (both storages) and redirect to login
-            try { localStorage.removeItem('healthai-auth'); } catch { }
-            try { sessionStorage.removeItem('healthai-auth'); } catch { }
+            try { localStorage.removeItem('healthai-auth'); } catch { /* ignore storage errors */ }
+            try { sessionStorage.removeItem('healthai-auth'); } catch { /* ignore storage errors */ }
             try {
                 sessionStorage.setItem(AUTH_REDIRECT_MESSAGE_KEY, message || 'Session expirée');
             } catch { /* ignore storage errors */ }
