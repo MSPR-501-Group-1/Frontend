@@ -61,21 +61,9 @@ export const NAV_SECTIONS: NavItem[] = [
                 roles: DATA_ROLES,
             },
             {
-                key: 'quality',
-                label: 'Qualité des données',
-                path: '/data/quality',
-                roles: DATA_ROLES,
-            },
-            {
                 key: 'anomalies',
                 label: 'Anomalies',
                 path: '/data/anomalies',
-                roles: DATA_ROLES,
-            },
-            {
-                key: 'validation',
-                label: 'Validation',
-                path: '/data/validation',
                 roles: DATA_ROLES,
             },
         ],

@@ -10,8 +10,7 @@ export { fetchNutritionData, fetchFitnessData, fetchBiometricData } from './anal
 export { loginUser, logoutUser } from './auth.service';
 export { fetchAuditLogs } from './audit.service';
 export { fetchUsers } from './users.service';
-export { fetchPipelineRuns } from './pipeline.service';
+export { fetchEtlExecutions, launchEtlPipeline, approveEtlExecution, rejectEtlExecution } from './pipeline.service';
 export { fetchBusinessData } from './business.service';
 export { fetchPartners, fetchPartnerDashboard } from './partners.service';
 export { fetchSystemConfig, updateValidationRule, toggleAlertThreshold, updateSystemParams } from './config.service';
-export { fetchValidationBatches, fetchValidationSummary, fetchBatchRecords, approveBatch, rejectBatch } from './validation.service';
