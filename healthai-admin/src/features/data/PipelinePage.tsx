@@ -1,146 +1,385 @@
-import { useState, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import {
     Box,
-    Chip,
-    Typography,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
     FormControl,
     InputLabel,
-    Select,
     MenuItem,
+    Select,
+    Typography,
+    Chip,
+    CircularProgress,
+    Alert,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import SyncIcon from '@mui/icons-material/Sync';
+import DeleteIcon from '@mui/icons-material/Delete';
 import type { GridColDef } from '@mui/x-data-grid';
-import { useQuery } from '@tanstack/react-query';
-import { fetchPipelineRuns } from '@/services/pipeline.service';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+    fetchEtlExecutions,
+    launchEtlPipeline,
+    approveEtlExecution,
+    rejectEtlExecution,
+    deleteEtlExecution,
+} from '@/services/pipeline.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
-import { DataTable, FilterBar, StatsBar } from '@/components/shared';
+import { DataTable } from '@/components/shared';
 import { getErrorMessage } from '@/lib/error.utils';
-import type { PipelineRun, PipelineStatus } from '@/types';
-import { DataSource } from '@/types';
+import type { EtlExecution } from '@/types';
 
-// ─── Display config ─────────────────────────────────────────
+// ─── Display Config ─────────────────────────────────────────
 
-const STATUS_CONFIG: Record<PipelineStatus, {
-    label: string;
-    color: 'success' | 'error' | 'warning' | 'info';
-    icon: React.ReactElement;
-}> = {
-    success: { label: 'Succès', color: 'success', icon: <CheckCircleOutlineIcon fontSize="small" /> },
-    failed: { label: 'Échoué', color: 'error', icon: <ErrorOutlineIcon fontSize="small" /> },
-    running: { label: 'En cours', color: 'info', icon: <SyncIcon fontSize="small" /> },
-    pending: { label: 'En attente', color: 'warning', icon: <HourglassEmptyIcon fontSize="small" /> },
-};
+const PIPELINES = [
+    { value: 'nutrition', label: 'Nutrition' },
+    { value: 'exercises', label: 'Exercices' },
+] as const;
 
-const SOURCE_LABELS: Record<DataSource, string> = {
-    [DataSource.OPEN_FOOD_FACTS]: 'OpenFoodFacts',
-    [DataSource.WHO_NUTRITION_DB]: 'WHO Nutrition DB',
-    [DataSource.EXERCISE_DB]: 'ExerciseDB',
-    [DataSource.USER_WEARABLES]: 'User Wearables',
-    [DataSource.ANSES_CIQUAL]: 'ANSES CIQUAL',
-};
+// ─── Launch Dialog ──────────────────────────────────────────
 
-function formatDuration(seconds: number): string {
-    if (seconds === 0) return '—';
-    if (seconds < 60) return `${seconds}s`;
-    const min = Math.floor(seconds / 60);
-    const sec = seconds % 60;
-    return sec > 0 ? `${min}m ${sec}s` : `${min}m`;
+interface LaunchDialogProps {
+    open: boolean;
+    onClose: () => void;
+    onLaunch: (pipeline: 'nutrition' | 'exercises') => void;
+    isLoading: boolean;
 }
 
-// ─── Page ───────────────────────────────────────────────────
+function LaunchDialog({ open, onClose, onLaunch, isLoading }: LaunchDialogProps) {
+    const [selectedPipeline, setSelectedPipeline] = useState<'nutrition' | 'exercises'>('nutrition');
 
-type StatusFilter = 'all' | PipelineStatus;
+    const handleLaunch = () => {
+        onLaunch(selectedPipeline);
+        onClose();
+    };
+
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <DialogTitle>Lancer une pipeline ETL</DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+                <FormControl fullWidth>
+                    <InputLabel>Pipeline</InputLabel>
+                    <Select
+                        value={selectedPipeline}
+                        label="Pipeline"
+                        onChange={(e: SelectChangeEvent) =>
+                            setSelectedPipeline(e.target.value as 'nutrition' | 'exercises')
+                        }
+                    >
+                        {PIPELINES.map(({ value, label }) => (
+                            <MenuItem key={value} value={value}>
+                                {label}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose}>Annuler</Button>
+                <Button
+                    onClick={handleLaunch}
+                    variant="contained"
+                    disabled={isLoading}
+                    startIcon={isLoading ? <CircularProgress size={20} /> : <PlayArrowIcon />}
+                >
+                    {isLoading ? 'Lancement...' : 'Lancer'}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+// ─── Validation Dialog ──────────────────────────────────────
+
+interface ValidationDialogProps {
+    open: boolean;
+    execution: EtlExecution | null;
+    onClose: () => void;
+    onApprove: () => void;
+    onReject: () => void;
+    onDelete: () => void;
+    isLoading: boolean;
+}
+
+function ValidationDialog({
+    open,
+    execution,
+    onClose,
+    onApprove,
+    onReject,
+    onDelete,
+    isLoading,
+}: ValidationDialogProps) {
+    if (!execution) return null;
+
+    // Determine available actions based on status
+    const isTransformed = execution.status === 'TRANSFORMED';
+    const canAcceptOrReject = isTransformed;
+    const canDelete = ['FAILED', 'REJECTED', 'LOADED'].includes(execution.status);
+    const isPending = execution.status === 'PENDING';
+
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <DialogTitle>
+                {isTransformed ? 'Valider l\'exécution ETL' : 'Détails de l\'exécution ETL'}
+            </DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box>
+                        <Typography variant="body2" color="text.secondary">
+                            Statut
+                        </Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                            {execution.status === 'LOADED' && 'Succès'}
+                            {execution.status === 'REJECTED' && 'Rejeté'}
+                            {execution.status === 'TRANSFORMED' && 'Transformé'}
+                            {execution.status === 'FAILED' && 'Échoué'}
+                            {execution.status === 'PENDING' && 'En attente'}
+                        </Typography>
+                    </Box>
+                    <Box>
+                        <Typography variant="body2" color="text.secondary">
+                            Enregistrements extraits
+                        </Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                            {execution.records_extracted.toLocaleString('fr-FR')}
+                        </Typography>
+                    </Box>
+                    {execution.records_errors > 0 && (
+                        <Box>
+                            <Typography variant="body2" color="text.secondary">
+                                Erreurs
+                            </Typography>
+                            <Typography variant="body1" fontWeight={600} color="error">
+                                {execution.records_errors.toLocaleString('fr-FR')}
+                            </Typography>
+                        </Box>
+                    )}
+                    {isTransformed && (
+                        <Alert severity="info">
+                            Cliquez sur <strong>Accepter</strong> pour valider et charger les données en base,
+                            ou <strong>Rejeter</strong> pour ignorer ce lot.
+                        </Alert>
+                    )}
+                    {isPending && (
+                        <Alert severity="warning">
+                            Cette exécution est en attente de traitement. Aucune action n'est possible pour le moment.
+                        </Alert>
+                    )}
+                    {canDelete && !isTransformed && (
+                        <Alert severity="info">
+                            La seule action disponible pour ce statut est la suppression.
+                        </Alert>
+                    )}
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                {canAcceptOrReject && (
+                    <Button onClick={onReject} disabled={isLoading} color="error">
+                        Rejeter
+                    </Button>
+                )}
+                {canDelete && (
+                    <Button onClick={onDelete} disabled={isLoading} color="error" startIcon={<DeleteIcon />}>
+                        Supprimer
+                    </Button>
+                )}
+                <Button onClick={onClose} disabled={isLoading}>
+                    Annuler
+                </Button>
+                {canAcceptOrReject && (
+                    <Button
+                        onClick={onApprove}
+                        variant="contained"
+                        disabled={isLoading}
+                        startIcon={isLoading ? <CircularProgress size={20} /> : <CheckCircleOutlineIcon />}
+                    >
+                        {isLoading ? 'Chargement...' : 'Accepter'}
+                    </Button>
+                )}
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+// ─── Main Page ──────────────────────────────────────────────
 
 export default function PipelinePage() {
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-    const statusFilterLabelId = 'pipeline-status-filter-label';
+    const queryClient = useQueryClient();
+    const [launchDialogOpen, setLaunchDialogOpen] = useState(false);
+    const [validationDialogOpen, setValidationDialogOpen] = useState(false);
+    const [selectedExecution, setSelectedExecution] = useState<EtlExecution | null>(null);
 
-    const { data: runs, isLoading, isError, error } = useQuery({
-        queryKey: ['pipeline-runs'],
-        queryFn: fetchPipelineRuns,
-        // Polling toutes les 15s — le pipeline nécessite un suivi plus fréquent
-        // que le dashboard pour détecter rapidement les échecs d'ingestion
-        refetchInterval: 15_000,
+    // Fetch executions
+    const { data: executions = [], isLoading, isError, error } = useQuery({
+        queryKey: ['etl-executions'],
+        queryFn: fetchEtlExecutions,
+        refetchInterval: 5000, // Poll every 5s
     });
 
-    // ── Filtered data ──
-    const filteredRows = useMemo(() => {
-        if (!runs) return [];
-        if (statusFilter === 'all') return runs;
-        return runs.filter((r) => r.status === statusFilter);
-    }, [runs, statusFilter]);
+    // Launch mutation
+    const launchMutation = useMutation({
+        mutationFn: launchEtlPipeline,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['etl-executions'] });
+        },
+    });
 
-    // ── Stats ──
-    const stats = useMemo(() => {
-        if (!runs) return { total: 0, success: 0, failed: 0, running: 0 };
-        return {
-            total: runs.length,
-            success: runs.filter((r) => r.status === 'success').length,
-            failed: runs.filter((r) => r.status === 'failed').length,
-            running: runs.filter((r) => r.status === 'running').length,
-        };
-    }, [runs]);
+    // Approve mutation
+    const approveMutation = useMutation({
+        mutationFn: approveEtlExecution,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['etl-executions'] });
+            setValidationDialogOpen(false);
+            setSelectedExecution(null);
+        },
+    });
 
-    // ── Columns ──
-    const columns: GridColDef<PipelineRun>[] = useMemo(() => [
+    // Reject mutation
+    const rejectMutation = useMutation({
+        mutationFn: rejectEtlExecution,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['etl-executions'] });
+            setValidationDialogOpen(false);
+            setSelectedExecution(null);
+        },
+    });
+
+    // Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: deleteEtlExecution,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['etl-executions'] });
+            setValidationDialogOpen(false);
+            setSelectedExecution(null);
+        },
+    });
+
+    // Handlers
+    const handleLaunch = useCallback((pipeline: 'nutrition' | 'exercises') => {
+        launchMutation.mutate(pipeline);
+    }, [launchMutation]);
+
+    const handleApprove = useCallback(() => {
+        if (selectedExecution) {
+            approveMutation.mutate(selectedExecution.id);
+        }
+    }, [selectedExecution, approveMutation]);
+
+    const handleReject = useCallback(() => {
+        if (selectedExecution) {
+            rejectMutation.mutate(selectedExecution.id);
+        }
+    }, [selectedExecution, rejectMutation]);
+
+    const handleDelete = useCallback(() => {
+        if (selectedExecution) {
+            deleteMutation.mutate(selectedExecution.id);
+        }
+    }, [selectedExecution, deleteMutation]);
+
+    // Columns
+    const columns: GridColDef<EtlExecution>[] = [
         {
             field: 'id',
             headerName: 'ID',
-            width: 110,
+            width: 120,
+            flex: 0.5,
         },
         {
-            field: 'source',
-            headerName: 'Source',
-            width: 160,
-            valueFormatter: (value: DataSource) => SOURCE_LABELS[value] || value,
-        },
-        {
-            field: 'startedAt',
-            headerName: 'Démarré le',
-            width: 160,
-            valueFormatter: (value: string) =>
-                new Date(value).toLocaleString('fr-FR', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit',
-                }),
-        },
-        {
-            field: 'duration',
-            headerName: 'Durée',
-            width: 100,
-            valueFormatter: (value: number) => formatDuration(value),
+            field: 'name',
+            headerName: 'Pipeline',
+            width: 150,
+            flex: 0.5,
+            valueFormatter: (value) => {
+                const pipeline = PIPELINES.find((p) => p.value === value);
+                return pipeline ? pipeline.label : value;
+            },
         },
         {
             field: 'status',
             headerName: 'Statut',
             width: 130,
+            flex: 0.5,
+            // If status is loaded -> green
+            // If status is rejected -> red
+            // If status is transformed -> blue
+            // If status is failed -> red
+            // If status is pending -> orange
             renderCell: ({ value }) => {
-                const cfg = STATUS_CONFIG[value as PipelineStatus];
-                return (
-                    <Chip
-                        icon={cfg.icon}
-                        label={cfg.label}
-                        color={cfg.color}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                    />
-                );
+                let color: 'success' | 'error' | 'warning' | 'info' | 'default' = 'default';
+                let label = value;
+
+                switch (value) {
+                    case 'LOADED':
+                        color = 'success';
+                        label = 'Succès';
+                        break;
+                    case 'REJECTED':
+                        color = 'error';
+                        label = 'Rejeté';
+                        break;
+                    case 'TRANSFORMED':
+                        color = 'info';
+                        label = 'Transformé';
+                        break;
+                    case 'FAILED':
+                        color = 'error';
+                        label = 'Échoué';
+                        break;
+                    case 'PENDING':
+                        color = 'warning';
+                        label = 'En attente';
+                        break;
+                }
+
+                return <Chip label={label} color={color} size="small" />;
             },
         },
         {
-            field: 'recordsProcessed',
-            headerName: 'Traités',
-            width: 100,
+            field: 'started_at',
+            headerName: 'Démarré',
+            width: 180,
+            flex: 1,
+            valueFormatter: (value: string) =>
+                new Date(value).toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }),
+        },
+        {
+            field: 'completed_at',
+            headerName: 'Complété',
+            width: 180,
+            flex: 1,
+            valueFormatter: (value?: string) =>
+                value
+                    ? new Date(value).toLocaleString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    })
+                    : '—',
+        },
+        {
+            field: 'records_extracted',
+            headerName: 'Extraits',
+            width: 110,
             valueFormatter: (value: number) => value.toLocaleString('fr-FR'),
         },
         {
-            field: 'recordsFailed',
-            headerName: 'Échoués',
-            width: 100,
+            field: 'records_errors',
+            headerName: 'Erreurs',
+            width: 110,
             renderCell: ({ value }) => (
                 <Typography
                     variant="body2"
@@ -152,57 +391,99 @@ export default function PipelinePage() {
             ),
         },
         {
-            field: 'triggeredBy',
-            headerName: 'Déclenché par',
-            width: 160,
-        },
-    ], []);
+            field: 'actions',
+            headerName: 'Actions',
+            width: 120,
+            sortable: false,
+            filterable: false,
+            renderCell: ({ row }) => {
+                // Determine action availability
+                const isPending = row.status === 'PENDING';
+                const isDisabled = isPending || (approveMutation.isPending || rejectMutation.isPending || deleteMutation.isPending);
 
-    // ── Loading / Error ──
+                return (
+                    <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => {
+                            setSelectedExecution(row);
+                            setValidationDialogOpen(true);
+                        }}
+                        disabled={isDisabled}
+                        startIcon={isDisabled ? <CircularProgress size={16} /> : <CheckCircleOutlineIcon />}
+                    >
+                        {isPending ? 'Attente' : 'Actions'}
+                    </Button>
+                );
+            },
+        },
+    ];
+
+    // UI
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement du pipeline ETL.')} />;
+    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement des exécutions ETL.')} />;
 
     return (
         <Box>
             <PageHeader
-                title="Pipeline ETL — Historique"
-                subtitle="Journal en lecture seule des exécutions d'ingestion Spark (suivi de débit, statuts, durées)"
+                title="Gestion du Pipeline ETL"
+                subtitle="Lancez des pipelines d'ETL, consultez l'historique des exécutions et validez les résultats"
             />
 
-            {/* Stats */}
-            <StatsBar stats={[
-                { label: `${stats.total} exécutions` },
-                { label: `${stats.success} succès`, color: 'success' },
-                { label: `${stats.failed} échoués`, color: 'error' },
-                { label: `${stats.running} en cours`, color: 'info' },
-            ]} />
+            {/* Launch Button */}
+            <Box sx={{ mb: 2 }}>
+                <Button
+                    variant="contained"
+                    startIcon={<PlayArrowIcon />}
+                    onClick={() => setLaunchDialogOpen(true)}
+                    disabled={launchMutation.isPending}
+                >
+                    {launchMutation.isPending ? 'Lancement en cours...' : 'Lancer une pipeline'}
+                </Button>
+            </Box>
 
-            {/* Filter */}
-            <FilterBar resultCount={filteredRows.length} resultLabel="exécution">
-                <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel id={statusFilterLabelId}>Statut</InputLabel>
-                    <Select
-                        labelId={statusFilterLabelId}
-                        value={statusFilter}
-                        label="Statut"
-                        onChange={(e: SelectChangeEvent) => setStatusFilter(e.target.value as StatusFilter)}
-                    >
-                        <MenuItem value="all">Tous les statuts</MenuItem>
-                        {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                            <MenuItem key={key} value={key}>{cfg.label}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            </FilterBar>
+            {/* Error message */}
+            {launchMutation.isError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {getErrorMessage(launchMutation.error, 'Erreur lors du lancement de la pipeline.')}
+                </Alert>
+            )}
 
-            {/* DataGrid */}
-            <DataTable
-                rows={filteredRows}
-                columns={columns}
-                ariaLabel="Tableau des exécutions du pipeline ETL"
-                defaultSort={{ field: 'startedAt', sort: 'desc' }}
+            {approveMutation.isError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {getErrorMessage(approveMutation.error, 'Erreur lors du chargement des données.')}
+                </Alert>
+            )}
+
+            {/* Executions Table */}
+            {executions.length === 0 ? (
+                <Alert severity="info">Aucune exécution pour le moment.</Alert>
+            ) : (
+                <DataTable
+                    rows={executions}
+                    columns={columns}
+                    ariaLabel="Tableau des exécutions ETL"
+                    defaultSort={{ field: 'started_at', sort: 'desc' }}
+                />
+            )}
+
+            {/* Dialogs */}
+            <LaunchDialog
+                open={launchDialogOpen}
+                onClose={() => setLaunchDialogOpen(false)}
+                onLaunch={handleLaunch}
+                isLoading={launchMutation.isPending}
             />
 
+            <ValidationDialog
+                open={validationDialogOpen}
+                execution={selectedExecution}
+                onClose={() => setValidationDialogOpen(false)}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                onDelete={handleDelete}
+                isLoading={approveMutation.isPending || rejectMutation.isPending || deleteMutation.isPending}
+            />
         </Box>
     );
 }

@@ -178,18 +178,13 @@ export interface AuditLog {
 
 // ─── Pipeline ETL models ────────────────────────────────────
 
-export type PipelineStatus = 'success' | 'failed' | 'running' | 'pending';
-
-export interface PipelineRun {
+export interface EtlExecution {
     id: string;
-    source: DataSource;
-    startedAt: string;          // ISO date
-    duration: number;           // seconds
-    status: PipelineStatus;
-    recordsProcessed: number;
-    recordsFailed: number;
-    errorMessage?: string;
-    triggeredBy: string;        // 'scheduler' | user email
+    status: 'PENDING' | 'TRANSFORMED' | 'LOADED' | 'REJECTED' | 'FAILED';
+    started_at: string;                    // ISO date
+    completed_at?: string;                 // ISO date (null if running)
+    records_extracted: number;
+    records_errors: number;
 }
 
 // ─── Admin User models ──────────────────────────────────────
@@ -284,60 +279,4 @@ export interface SystemConfig {
     refreshInterval: number;
 }
 
-// ─── Validation Batch models (ETL CSV OK/KO workflow) ───────
 
-/**
- * Représente un lot de données produit par l'ETL (un run Spark).
- *
- * Architecture Approche A : l'ETL génère ok.csv + ko.csv.
- * Le Backend expose ces batches via API REST.
- * L'admin valide/rejette chaque lot depuis cette interface.
- */
-export interface ValidationBatch {
-    id: string;
-    source: DataSource;
-    pipelineRunId: string;          // lien vers le run ETL ayant produit ce batch
-    receivedAt: string;             // ISO date — date de dépôt des CSV
-    status: ValidationStatus;
-    /** Nombre total d'enregistrements dans ok.csv */
-    okRecordCount: number;
-    /** Nombre total d'enregistrements dans ko.csv */
-    koRecordCount: number;
-    /** Reviewer ayant traité le batch (null si pending) */
-    reviewer?: string;
-    reviewedAt?: string;            // ISO date
-    comment?: string;
-    /** Nom du fichier ok.csv d'origine (traçabilité) */
-    okFileName: string;
-    /** Nom du fichier ko.csv d'origine (traçabilité) */
-    koFileName: string;
-}
-
-/** Enregistrement individuel issu d'un ko.csv — ligne en anomalie */
-export interface ValidationRecord {
-    id: string;
-    batchId: string;
-    /** Nom du champ en anomalie (ex: heart_rate, calories, weight_kg) */
-    field: string;
-    /** Valeur originale (telle que figurant dans ko.csv) */
-    originalValue: string;
-    /** Valeur corrigée par l'admin (null si pas encore édité) */
-    correctedValue?: string;
-    validationStatus: 'flagged' | 'corrected' | 'dismissed';
-    rule?: string;                  // nom de la règle enfreinte
-    flagReason: string;
-    /** Admin ayant effectué la correction */
-    correctedBy?: string;
-    /** Date ISO de la correction */
-    correctedAt?: string;
-}
-
-/** Résumé agrégé pour les KPIs de la page validation */
-export interface ValidationSummary {
-    pending: number;
-    inReview: number;
-    approved: number;
-    rejected: number;
-    corrected: number;
-    total: number;
-}

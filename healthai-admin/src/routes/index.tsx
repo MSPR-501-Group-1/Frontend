@@ -20,9 +20,7 @@ const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
 
 // Datas
 const PipelinePage = lazy(() => import('@/features/data/PipelinePage'));
-const DataQualityPage = lazy(() => import('@/features/data-quality/DataQualityPage'));
 const AnomaliesPage = lazy(() => import('@/features/anomalies/AnomaliesPage'));
-const ValidationPage = lazy(() => import('@/features/data/ValidationPage'));
 
 // Analytics
 const NutritionPage = lazy(() => import('@/features/analytics/NutritionPage'));
@@ -89,14 +87,6 @@ export const router = createBrowserRouter([
                 ),
             },
             {
-                path: 'data/quality',
-                element: (
-                    <RequireRole roles={[...DATA_ROLES]}>
-                        {withPageLoader(<DataQualityPage />)}
-                    </RequireRole>
-                ),
-            },
-            {
                 path: 'data/anomalies',
                 element: (
                     <RequireRole roles={[...DATA_ROLES]}>
@@ -104,16 +94,7 @@ export const router = createBrowserRouter([
                     </RequireRole>
                 ),
             },
-            {
-                path: 'data/validation',
-                element: (
-                    <RequireRole roles={[...DATA_ROLES]}>
-                        {withPageLoader(<ValidationPage />)}
-                    </RequireRole>
-                ),
-            },
 
-            { path: 'data-quality', element: <Navigate to="/data/quality" replace /> },
             { path: 'anomalies', element: <Navigate to="/data/anomalies" replace /> },
             { path: 'audit', element: <Navigate to="/admin/audit" replace /> },
             { path: 'nutrition', element: <Navigate to="/analytics/nutrition" replace /> },
