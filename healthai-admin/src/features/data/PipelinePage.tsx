@@ -266,7 +266,10 @@ export default function PipelinePage() {
 
     const handleApprove = useCallback(() => {
         if (selectedExecution) {
-            approveMutation.mutate(selectedExecution.id);
+            approveMutation.mutate({
+                id: selectedExecution.id,
+                pipeline: selectedExecution.name as 'nutrition' | 'exercises',
+            });
         }
     }, [selectedExecution, approveMutation]);
 
@@ -417,6 +420,40 @@ export default function PipelinePage() {
                 );
             },
         },
+        {
+            field: 'csv',
+            headerName: 'CSV',
+            width: 120,
+            sortable: false,
+            filterable: false,
+            renderCell: ({ row }) => {
+                const pipelineValue = PIPELINES.find(p => p.value === row.name)?.value;
+
+                const handleDownload = () => {
+                if (!pipelineValue) return;
+
+                    const filename = `${pipelineValue}_${row.id}.csv`;
+                    const url = `/api/files/${pipelineValue}/${row.id}`;
+
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                };
+    
+
+                return (
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={handleDownload}
+                        disabled={!row.id || !row.name}
+                    >
+                        CSV
+                    </Button>
+                );
+            },
+        }
     ];
 
     // UI

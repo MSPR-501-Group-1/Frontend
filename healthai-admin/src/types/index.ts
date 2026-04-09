@@ -180,6 +180,7 @@ export interface AuditLog {
 
 export interface EtlExecution {
     id: string;
+    name: string;
     status: 'PENDING' | 'TRANSFORMED' | 'LOADED' | 'REJECTED' | 'FAILED';
     started_at: string;                    // ISO date
     completed_at?: string;                 // ISO date (null if running)

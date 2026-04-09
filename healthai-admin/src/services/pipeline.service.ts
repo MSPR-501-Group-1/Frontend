@@ -13,25 +13,42 @@ export async function fetchEtlExecutions(): Promise<EtlExecution[]> {
 
 /** Fetch a single ETL execution by ID. */
 export async function fetchEtlExecution(id: string): Promise<EtlExecution> {
-    return apiClient.get<EtlExecution>(`/etl/${id}`);
+    const response = await apiClient.get<{ success: boolean; data: EtlExecution }>(`/etl/${id}`);
+    return response.data;
 }
 
 /** Launch an ETL pipeline. */
 export async function launchEtlPipeline(pipeline: 'nutrition' | 'exercises'): Promise<EtlExecution> {
-    return apiClient.post<EtlExecution>(`/etl/${pipeline}`, {});
+    const response = await apiClient.post<{ success: boolean; data: EtlExecution }>(`/etl/${pipeline}`, {});
+    return response.data;
 }
 
 /** Approve/Load an ETL execution (update status to loaded). */
-export async function approveEtlExecution(id: string): Promise<void> {
-    return apiClient.post<void>(`/etl/validate/${id}`, {});
+export async function approveEtlExecution(
+    payload: { id: string; pipeline: 'nutrition' | 'exercises' }
+): Promise<void> {
+    await apiClient.post<void>(`/etl/validate/${payload.id}`, { pipeline: payload.pipeline });
 }
 
 /** Reject an ETL execution (update status to rejected). */
 export async function rejectEtlExecution(id: string): Promise<void> {
-    return apiClient.post<void>(`/etl/reject/${id}`, {});
+    await apiClient.post<void>(`/etl/reject/${id}`, {});
 }
 
 /** Delete an ETL execution. */
 export async function deleteEtlExecution(id: string): Promise<void> {
-    return apiClient.delete<void>(`/etl/${id}`);
+    await apiClient.delete<void>(`/etl/${id}`);
+}
+
+export function downloadEtlCsv(pipeline: string, executionId: string) {
+    const filename = `${pipeline}_${executionId}.csv`;
+
+    const url = `/api/files/${pipeline}/${executionId}`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 }
