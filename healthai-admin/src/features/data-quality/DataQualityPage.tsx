@@ -6,6 +6,7 @@ import {
     Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { fetchDataQualityScore } from '@/services/data-quality.service';
+import type { DataQualityScore } from '@/types';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
 import ScoreGauge from '@/components/data-quality/ScoreGauge';
 import DimensionCard from '@/components/data-quality/DimensionCard';
@@ -55,9 +56,9 @@ function HistoryChart({ data }: { data: { date: string; value: number; target?: 
 // ─── Page ───────────────────────────────────────────────────
 
 export default function DataQualityPage() {
-    const { data, isLoading, isError, error } = useQuery({
+    const { data, isLoading, isError, error } = useQuery<DataQualityScore>({
         queryKey: ['data-quality', 'score'],
-        queryFn: fetchDataQualityScore,
+        queryFn: () => fetchDataQualityScore('30d'),
     });
 
     if (isLoading) return <LoadingState />;
