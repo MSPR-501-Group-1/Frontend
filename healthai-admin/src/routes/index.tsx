@@ -21,6 +21,7 @@ const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
 // Datas
 const PipelinePage = lazy(() => import('@/features/data/PipelinePage'));
 const AnomaliesPage = lazy(() => import('@/features/anomalies/AnomaliesPage'));
+const DataQualityPage = lazy(() => import('@/features/data-quality/DataQualityPage'));
 
 // Analytics
 const NutritionPage = lazy(() => import('@/features/analytics/NutritionPage'));
@@ -91,6 +92,14 @@ export const router = createBrowserRouter([
                 element: (
                     <RequireRole roles={[...DATA_ROLES]}>
                         {withPageLoader(<AnomaliesPage />)}
+                    </RequireRole>
+                ),
+            },
+            {
+                path: 'data/quality',
+                element: (
+                    <RequireRole roles={[...DATA_ROLES]}>
+                        {withPageLoader(<DataQualityPage />)}
                     </RequireRole>
                 ),
             },

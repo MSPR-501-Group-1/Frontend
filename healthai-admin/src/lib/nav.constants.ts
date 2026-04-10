@@ -66,6 +66,12 @@ export const NAV_SECTIONS: NavItem[] = [
                 path: '/data/anomalies',
                 roles: DATA_ROLES,
             },
+            {
+                key: 'quality',
+                label: 'Qualité des données',
+                path: '/data/quality',
+                roles: DATA_ROLES,
+            },
         ],
     } satisfies NavGroupSection,
 
