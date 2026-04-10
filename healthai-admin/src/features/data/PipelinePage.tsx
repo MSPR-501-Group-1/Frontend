@@ -430,7 +430,7 @@ export default function PipelinePage() {
                 const pipelineValue = PIPELINES.find(p => p.value === row.name)?.value;
 
                 const handleDownload = () => {
-                if (!pipelineValue) return;
+                    if (!pipelineValue || !row.id) return;
 
                     const filename = `${pipelineValue}_${row.id}.csv`;
                     const url = `/api/files/${pipelineValue}/${row.id}`;
@@ -438,7 +438,9 @@ export default function PipelinePage() {
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = filename;
+                    document.body.appendChild(a);
                     a.click();
+                    a.remove();
                 };
     
 

@@ -39,7 +39,7 @@ RUN printf 'server {\n\
     \n\
     # Reverse proxy for API requests\n\
     location /api/ {\n\
-    proxy_pass http://backend:3000/;\n\
+    proxy_pass http://backend:3000/api/;\n\
     proxy_http_version 1.1;\n\
     proxy_set_header Host $host;\n\
     proxy_set_header X-Real-IP $remote_addr;\n\
