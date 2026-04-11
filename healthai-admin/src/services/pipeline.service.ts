@@ -19,7 +19,11 @@ export async function fetchEtlExecution(id: string): Promise<EtlExecution> {
 
 /** Launch an ETL pipeline. */
 export async function launchEtlPipeline(pipeline: 'nutrition' | 'exercises'): Promise<EtlExecution> {
-    const response = await apiClient.post<{ success: boolean; data: EtlExecution }>(`/etl/${pipeline}`, {});
+    const response = await apiClient.post<{ success: boolean; data: EtlExecution }>(
+        `/etl/${pipeline}`,
+        {},
+        { timeoutMs: 60_000 }
+    );
     return response.data;
 }
 
