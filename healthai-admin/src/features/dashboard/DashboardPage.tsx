@@ -41,7 +41,7 @@ export default function DashboardPage() {
     });
 
     if (isLoading) return <LoadingState />;
-    if (isError) return <ErrorState message={getErrorMessage(error, 'Erreur lors du chargement du dashboard.')} />;
+    if (isError) return <ErrorState message={getErrorMessage(error, 'Dashboard indisponible: endpoint /dashboard inaccessible.')} />;
     if (!data) return null;
 
     const {
