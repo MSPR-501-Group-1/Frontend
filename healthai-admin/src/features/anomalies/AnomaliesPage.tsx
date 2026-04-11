@@ -23,10 +23,12 @@ import {
 } from '@/lib/anomalies.constants';
 import type { Anomaly, AnomalySeverity, AnomalyStatus, AnomalyType } from '@/types';
 import { useNotificationStore } from '@/stores/notification.store';
+import { useAuthStore } from '@/stores/auth.store';
 
 // ─── Page ───────────────────────────────────────────────────
 
 type SeverityFilter = 'all' | AnomalySeverity;
+type StatusFilter = 'all' | 'open' | 'resolved';
 
 /** Column descriptors for CSV/PDF export (decoupled from DataGrid columns). */
 const EXPORT_COLUMNS: ExportColumn[] = [
@@ -42,20 +44,28 @@ const EXPORT_COLUMNS: ExportColumn[] = [
 
 export default function AnomaliesPage() {
     const queryClient = useQueryClient();
+    const currentUserId = useAuthStore((state) => state.user?.user_id);
     const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('all');
     const severityFilterLabelId = 'anomalies-severity-filter-label';
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+    const statusFilterLabelId = 'anomalies-status-filter-label';
     const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
 
     // ── Queries ──
     const { data: anomalies, isLoading, isError, error } = useQuery({
-        queryKey: ['anomalies'],
-        queryFn: fetchAnomalies,
+        queryKey: ['anomalies', statusFilter],
+        queryFn: () => fetchAnomalies({ range: 'all', status: statusFilter, page: 1, perPage: 200 }),
     });
 
     const mutation = useMutation({
-        mutationFn: ({ id, correctedValue, justification }: { id: string; correctedValue: string; justification: string }) =>
-            correctAnomaly(id, correctedValue, justification),
+        mutationFn: ({ id, resolutionAction }: { id: string; resolutionAction: string }) => {
+            if (!currentUserId) {
+                throw new Error('Utilisateur non authentifie.');
+            }
+
+            return correctAnomaly(id, resolutionAction, currentUserId);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['anomalies'] });
             setDialogOpen(false);
@@ -91,8 +101,8 @@ export default function AnomaliesPage() {
     }, []);
 
     const handleCorrection = useCallback(
-        (id: string, correctedValue: string, justification: string) => {
-            mutation.mutate({ id, correctedValue, justification });
+        (id: string, resolutionAction: string) => {
+            mutation.mutate({ id, resolutionAction });
         },
         [mutation],
     );
@@ -160,7 +170,7 @@ export default function AnomaliesPage() {
                 sortable: false,
                 filterable: false,
                 renderCell: ({ row }) =>
-                    row.status === 'open' || row.status === 'in_review' ? (
+                    row.status === 'open' ? (
                         <Button
                             size="small"
                             variant="outlined"
@@ -206,6 +216,20 @@ export default function AnomaliesPage() {
                     />
                 }
             >
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel id={statusFilterLabelId}>Statut</InputLabel>
+                    <Select
+                        labelId={statusFilterLabelId}
+                        value={statusFilter}
+                        label="Statut"
+                        onChange={(e: SelectChangeEvent) => setStatusFilter(e.target.value as StatusFilter)}
+                    >
+                        <MenuItem value="all">Tous</MenuItem>
+                        <MenuItem value="open">Ouvertes</MenuItem>
+                        <MenuItem value="resolved">Resolues</MenuItem>
+                    </Select>
+                </FormControl>
+
                 <FormControl size="small" sx={{ minWidth: 180 }}>
                     <InputLabel id={severityFilterLabelId}>Sévérité</InputLabel>
                     <Select

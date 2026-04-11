@@ -25,7 +25,7 @@ export interface CorrectionDialogProps {
     anomaly: Anomaly | null;
     open: boolean;
     onClose: () => void;
-    onSubmit: (id: string, correctedValue: string, justification: string) => void;
+    onSubmit: (id: string, resolutionAction: string) => void;
     isSubmitting: boolean;
 }
 
@@ -36,22 +36,22 @@ export default function CorrectionDialog({
     onSubmit,
     isSubmitting,
 }: CorrectionDialogProps) {
-    const [correctedValue, setCorrectedValue] = useState('');
-    const [justification, setJustification] = useState('');
+    const [resolutionAction, setResolutionAction] = useState('');
     const [touched, setTouched] = useState(false);
 
     const handleEnter = useCallback(() => {
-        setCorrectedValue(anomaly?.suggestedValue || '');
-        setJustification('');
+        setResolutionAction('');
         setTouched(false);
-    }, [anomaly]);
+    }, []);
 
-    const isValid = correctedValue.trim().length > 0 && justification.trim().length > 0;
+    const trimmedAction = resolutionAction.trim();
+    const isTooLong = trimmedAction.length > 50;
+    const isValid = trimmedAction.length > 0 && !isTooLong;
 
     const handleSubmit = () => {
         setTouched(true);
         if (!anomaly || !isValid) return;
-        onSubmit(anomaly.id, correctedValue.trim(), justification.trim());
+        onSubmit(anomaly.id, trimmedAction);
     };
 
     return (
@@ -86,25 +86,22 @@ export default function CorrectionDialog({
                         </Box>
 
                         <TextField
-                            label="Valeur corrigée"
-                            value={correctedValue}
-                            onChange={(e) => setCorrectedValue(e.target.value)}
-                            error={touched && correctedValue.trim().length === 0}
-                            helperText={touched && correctedValue.trim().length === 0 ? 'Obligatoire' : ''}
-                            required
-                            fullWidth
-                        />
-
-                        <TextField
-                            label="Justification"
-                            value={justification}
-                            onChange={(e) => setJustification(e.target.value)}
-                            error={touched && justification.trim().length === 0}
-                            helperText={touched && justification.trim().length === 0 ? 'Obligatoire — requis pour la traçabilité' : ''}
+                            label="Action de resolution"
+                            value={resolutionAction}
+                            onChange={(e) => setResolutionAction(e.target.value)}
+                            error={(touched && trimmedAction.length === 0) || isTooLong}
+                            helperText={
+                                touched && trimmedAction.length === 0
+                                    ? 'Obligatoire'
+                                    : isTooLong
+                                        ? 'Maximum 50 caracteres'
+                                        : `${trimmedAction.length}/50 caracteres`
+                            }
                             required
                             fullWidth
                             multiline
                             minRows={2}
+                            slotProps={{ htmlInput: { maxLength: 120 } }}
                         />
                     </Stack>
                 )}
