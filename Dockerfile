@@ -12,6 +12,9 @@ WORKDIR /app
 ARG VITE_API_BASE_URL=/api
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
+ARG VITE_USE_MOCKS=false
+ENV VITE_USE_MOCKS=$VITE_USE_MOCKS
+
 # Copy only package manifests first for better layer caching (DRY: install once)
 COPY healthai-admin/package.json healthai-admin/package-lock.json* ./
 

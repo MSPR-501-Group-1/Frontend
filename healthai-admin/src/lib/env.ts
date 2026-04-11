@@ -8,14 +8,14 @@
  * Usage in services:
  *   import { USE_MOCK } from '@/lib/env';
  *
- * When the backend is live, either:
- *   1. Set `VITE_USE_MOCKS=false` in `.env`
- *   2. Or remove the env var entirely (defaults to false in prod builds)
+ * Mock mode is now opt-in:
+ *   1. Set `VITE_USE_MOCKS=true` to force mocks locally.
+ *   2. Omit the variable (or set false) to use real API endpoints.
  */
 
 /**
- * `true`  → services return embedded mock data (no network).
- * `false` → services call the real API via `apiClient`.
+ * `true`  -> services return embedded mock data (no network).
+ * `false` -> services call the real API via `apiClient`.
  */
 export const USE_MOCK: boolean =
-    import.meta.env.VITE_USE_MOCKS?.toString().toLowerCase() !== 'false';
+    import.meta.env.VITE_USE_MOCKS?.toString().toLowerCase() === 'true';
