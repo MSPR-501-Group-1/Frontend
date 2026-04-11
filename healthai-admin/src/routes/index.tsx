@@ -77,7 +77,11 @@ export const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: withPageLoader(<DashboardPage />),
+                element: (
+                    <RequireRole roles={[...ANALYTICS_ROLES]}>
+                        {withPageLoader(<DashboardPage />)}
+                    </RequireRole>
+                ),
             },
             {
                 path: 'data/pipeline',

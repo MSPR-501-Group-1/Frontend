@@ -1,14 +1,17 @@
 import { Typography, Box, Grid } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import KPICard from '@/components/dashboard/KPICard';
 import ActivityLineChart from '@/components/dashboard/ActivityLineChart';
 import SourcesPieChart from '@/components/dashboard/SourcesPieChart';
 import AnomaliesBarChart from '@/components/dashboard/AnomaliesBarChart';
 import DataIngestionAreaChart from '@/components/dashboard/DataIngestionAreaChart';
 import AnomalyTrendChart from '@/components/dashboard/AnomalyTrendChart';
+import DateRangeSelector from '@/components/analytics/DateRangeSelector';
 import { LoadingState, ErrorState, PageHeader, ExportButton } from '@/components/feedback';
 import type { ExportColumn } from '@/lib/export.utils';
 import { getErrorMessage } from '@/lib/error.utils';
+import type { DateRange } from '@/types';
 import { fetchDashboardData } from '@/services/dashboard.service';
 
 // ─── KPI → drill-down route mapping (SRP: config déclarative) ───
@@ -18,13 +21,22 @@ const KPI_DRILLDOWN_ROUTES: Record<string, string> = {
     'anomalies-open': '/data/anomalies',
     'records-day': '/data/pipeline',
     'etl-success': '/data/pipeline',
-    'avg-response': '/analytics/business',
+    'activity-events': '/analytics/business',
 };
 
 export default function DashboardPage() {
+    const [range, setRange] = useState<DateRange>('30d');
+
+    const rangeLabel: Record<DateRange, string> = {
+        all: 'historique complet',
+        '7d': '7 derniers jours',
+        '30d': '30 derniers jours',
+        '90d': '90 derniers jours',
+    };
+
     const { data, isLoading, isError, error } = useQuery({
-        queryKey: ['dashboard'],
-        queryFn: fetchDashboardData,
+        queryKey: ['dashboard', range],
+        queryFn: () => fetchDashboardData(range),
         refetchInterval: 30_000,
     });
 
@@ -52,14 +64,17 @@ export default function DashboardPage() {
             {/* Page title — uses shared PageHeader for consistency */}
             <PageHeader
                 title="Dashboard"
-                subtitle="Vue d'ensemble des indicateurs clés — HealthAI Coach"
+                subtitle="Vue d'ensemble des indicateurs clés et de la qualité des flux de données."
                 actions={
-                    <ExportButton
-                        fileName="dashboard-kpis"
-                        title="Dashboard — Indicateurs Clés"
-                        columns={kpiExportColumns}
-                        rows={kpis as unknown as Record<string, unknown>[]}
-                    />
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        <DateRangeSelector value={range} onChange={setRange} />
+                        <ExportButton
+                            fileName="dashboard-kpis"
+                            title="Dashboard — Indicateurs Clés"
+                            columns={kpiExportColumns}
+                            rows={kpis as unknown as Record<string, unknown>[]}
+                        />
+                    </Box>
                 }
             />
 
@@ -88,14 +103,14 @@ export default function DashboardPage() {
                     <ActivityLineChart
                         data={userActivity}
                         title="Utilisateurs actifs"
-                        subtitle="Évolution sur les 30 derniers jours"
+                        subtitle={`Évolution sur ${rangeLabel[range]}`}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                     <ActivityLineChart
                         data={dataQualityTrend}
                         title="Score qualité données"
-                        subtitle="Progression vers l'objectif de 90%"
+                        subtitle={`Progression sur ${rangeLabel[range]}`}
                         color="#16A34A"
                     />
                 </Grid>
@@ -110,7 +125,7 @@ export default function DashboardPage() {
                     <DataIngestionAreaChart
                         data={dataIngestion}
                         title="Enregistrements ingérés par source"
-                        subtitle="Stacked area — 30 derniers jours"
+                        subtitle={`Stacked area — ${rangeLabel[range]}`}
                     />
                 </Grid>
             </Grid>
@@ -131,7 +146,7 @@ export default function DashboardPage() {
                     <AnomaliesBarChart
                         data={anomaliesByType}
                         title="Anomalies par type"
-                        subtitle="Anomalies ouvertes actuellement"
+                        subtitle={`Volume observé sur ${rangeLabel[range]}`}
                     />
                 </Grid>
             </Grid>
@@ -145,7 +160,7 @@ export default function DashboardPage() {
                     <AnomalyTrendChart
                         data={anomalyTrend}
                         title="Nouvelles vs Résolues"
-                        subtitle="Évolution hebdomadaire + taux de résolution — 12 dernières semaines"
+                        subtitle={`Évolution des détections et résolutions — ${rangeLabel[range]}`}
                     />
                 </Grid>
             </Grid>

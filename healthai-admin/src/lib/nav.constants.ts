@@ -46,6 +46,7 @@ export const NAV_SECTIONS: NavItem[] = [
         label: 'Tableau de bord',
         icon: 'Dashboard',
         path: '/',
+        roles: ANALYTICS_ROLES,
     } satisfies NavLeafSection,
 
     {
