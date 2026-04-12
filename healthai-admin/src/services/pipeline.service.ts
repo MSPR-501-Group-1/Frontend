@@ -45,7 +45,11 @@ export async function deleteEtlExecution(id: string): Promise<void> {
 }
 
 export function downloadEtlCsv(pipeline: string, executionId: string) {
-    const filename = `${pipeline}_${executionId}.csv`;
+    const entityByPipeline: Record<string, string> = {
+        nutrition: 'ingredient',
+        exercises: 'exercise',
+    };
+    const filename = `${entityByPipeline[pipeline] || pipeline}_${executionId}.csv`;
     const url = `/api/files/${pipeline}/${executionId}`;
 
     const a = document.createElement('a');

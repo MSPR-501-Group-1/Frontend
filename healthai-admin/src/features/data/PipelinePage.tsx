@@ -40,6 +40,11 @@ const PIPELINES = [
     { value: 'exercises', label: 'Exercices' },
 ] as const;
 
+const CSV_ENTITY_BY_PIPELINE: Record<'nutrition' | 'exercises', 'ingredient' | 'exercise'> = {
+    nutrition: 'ingredient',
+    exercises: 'exercise',
+};
+
 // ─── Launch Dialog ──────────────────────────────────────────
 
 interface LaunchDialogProps {
@@ -432,7 +437,7 @@ export default function PipelinePage() {
                 const handleDownload = () => {
                     if (!pipelineValue || !row.id) return;
 
-                    const filename = `${pipelineValue}_${row.id}.csv`;
+                    const filename = `${CSV_ENTITY_BY_PIPELINE[pipelineValue]}_${row.id}.csv`;
                     const url = `/api/files/${pipelineValue}/${row.id}`;
 
                     const a = document.createElement('a');
@@ -442,7 +447,7 @@ export default function PipelinePage() {
                     a.click();
                     a.remove();
                 };
-    
+
 
                 return (
                     <Button
