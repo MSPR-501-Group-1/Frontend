@@ -41,8 +41,17 @@ RUN printf 'server {\n\
     index index.html;\n\
     \n\
     # Reverse proxy for API requests\n\
+    location /api/files/ {\n\
+    proxy_pass http://backend:3000/api/files/;\n\
+    proxy_http_version 1.1;\n\
+    proxy_set_header Host $host;\n\
+    proxy_set_header X-Real-IP $remote_addr;\n\
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+    proxy_set_header X-Forwarded-Proto $scheme;\n\
+    }\n\
+    \n\
     location /api/ {\n\
-    proxy_pass http://backend:3000/api/;\n\
+    proxy_pass http://backend:3000/;\n\
     proxy_http_version 1.1;\n\
     proxy_set_header Host $host;\n\
     proxy_set_header X-Real-IP $remote_addr;\n\
