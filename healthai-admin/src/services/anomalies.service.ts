@@ -131,9 +131,14 @@ export async function correctAnomaly(
     id: string,
     resolutionAction: string,
     resolvedBy: string,
+    options: {
+        correctedValue?: string;
+        replayNow?: boolean;
+    } = {},
 ): Promise<Anomaly> {
     const normalizedAction = resolutionAction.trim();
     const normalizedResolvedBy = resolvedBy.trim();
+    const normalizedCorrectedValue = (options.correctedValue || '').trim();
 
     if (!normalizedAction) {
         throw new Error('Action de resolution obligatoire.');
@@ -152,6 +157,8 @@ export async function correctAnomaly(
         {
             resolution_action: normalizedAction,
             resolved_by: normalizedResolvedBy,
+            corrected_value: normalizedCorrectedValue || undefined,
+            replay_now: options.replayNow ?? true,
         }
     );
 

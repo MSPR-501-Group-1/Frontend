@@ -59,12 +59,23 @@ export default function AnomaliesPage() {
     });
 
     const mutation = useMutation({
-        mutationFn: ({ id, resolutionAction }: { id: string; resolutionAction: string }) => {
+        mutationFn: ({
+            id,
+            resolutionAction,
+            correctedValue,
+        }: {
+            id: string;
+            resolutionAction: string;
+            correctedValue: string;
+        }) => {
             if (!currentUserId) {
                 throw new Error('Utilisateur non authentifie.');
             }
 
-            return correctAnomaly(id, resolutionAction, currentUserId);
+            return correctAnomaly(id, resolutionAction, currentUserId, {
+                correctedValue,
+                replayNow: true,
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['anomalies'] });
@@ -101,8 +112,8 @@ export default function AnomaliesPage() {
     }, []);
 
     const handleCorrection = useCallback(
-        (id: string, resolutionAction: string) => {
-            mutation.mutate({ id, resolutionAction });
+        (id: string, resolutionAction: string, correctedValue: string) => {
+            mutation.mutate({ id, resolutionAction, correctedValue });
         },
         [mutation],
     );

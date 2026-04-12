@@ -25,7 +25,7 @@ export interface CorrectionDialogProps {
     anomaly: Anomaly | null;
     open: boolean;
     onClose: () => void;
-    onSubmit: (id: string, resolutionAction: string) => void;
+    onSubmit: (id: string, resolutionAction: string, correctedValue: string) => void;
     isSubmitting: boolean;
 }
 
@@ -37,21 +37,26 @@ export default function CorrectionDialog({
     isSubmitting,
 }: CorrectionDialogProps) {
     const [resolutionAction, setResolutionAction] = useState('');
+    const [correctedValue, setCorrectedValue] = useState('');
     const [touched, setTouched] = useState(false);
 
     const handleEnter = useCallback(() => {
         setResolutionAction('');
+        setCorrectedValue('');
         setTouched(false);
     }, []);
 
     const trimmedAction = resolutionAction.trim();
+    const trimmedCorrectedValue = correctedValue.trim();
+    const isDlqSource = Boolean(anomaly && ['ingredient', 'exercise'].includes(anomaly.source));
     const isTooLong = trimmedAction.length > 50;
-    const isValid = trimmedAction.length > 0 && !isTooLong;
+    const isMissingCorrectedValue = isDlqSource && touched && trimmedCorrectedValue.length === 0;
+    const isValid = trimmedAction.length > 0 && !isTooLong && (!isDlqSource || trimmedCorrectedValue.length > 0);
 
     const handleSubmit = () => {
         setTouched(true);
         if (!anomaly || !isValid) return;
-        onSubmit(anomaly.id, trimmedAction);
+        onSubmit(anomaly.id, trimmedAction, trimmedCorrectedValue);
     };
 
     return (
@@ -102,6 +107,20 @@ export default function CorrectionDialog({
                             multiline
                             minRows={2}
                             slotProps={{ htmlInput: { maxLength: 120 } }}
+                        />
+
+                        <TextField
+                            label="Valeur corrigee"
+                            value={correctedValue}
+                            onChange={(e) => setCorrectedValue(e.target.value)}
+                            required={isDlqSource}
+                            error={isMissingCorrectedValue}
+                            helperText={
+                                isDlqSource
+                                    ? (isMissingCorrectedValue ? 'Obligatoire pour le rejeu ETL' : 'Utilisee pour corriger la ligne DLQ puis rejouer')
+                                    : 'Optionnelle'
+                            }
+                            fullWidth
                         />
                     </Stack>
                 )}
