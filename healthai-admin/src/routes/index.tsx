@@ -11,7 +11,8 @@ import {
     ANALYTICS_BUSINESS_ROLES,
     PARTNER_ROLES,
     ADMIN_ROLES,
-    AUDIT_ROLES,
+    // Commented out for now, to be implemented in a future phase
+    // AUDIT_ROLES,
 } from '@/lib/nav.constants';
 
 
@@ -34,8 +35,10 @@ const PartnersPage = lazy(() => import('@/features/partners/PartnersPage'));
 
 // Administration
 const UsersPage = lazy(() => import('@/features/admin/UsersPage'));
-const AuditPage = lazy(() => import('@/features/admin/AuditPage'));
-const ConfigPage = lazy(() => import('@/features/admin/ConfigPage'));
+
+// Commented out for now, to be implemented in a future phase
+// const AuditPage = lazy(() => import('@/features/admin/AuditPage'));
+// const ConfigPage = lazy(() => import('@/features/admin/ConfigPage'));
 
 // Errors
 const ForbiddenPage = lazy(() => import('@/features/errors/ForbiddenPage'));
@@ -164,23 +167,23 @@ export const router = createBrowserRouter([
                     </RequireRole>
                 ),
             },
-            {
-                path: 'admin/audit',
-                element: (
-                    <RequireRole roles={[...AUDIT_ROLES]}>
-                        {withPageLoader(<AuditPage />)}
-                    </RequireRole>
-                ),
-            },
-            {
-                path: 'admin/config',
-                element: (
-                    <RequireRole roles={[...ADMIN_ROLES]}>
-                        {withPageLoader(<ConfigPage />)}
-                    </RequireRole>
-                ),
-            },
-
+            // Commented out for now, to be implemented in a future phase
+            // {
+            //     path: 'admin/audit',
+            //     element: (
+            //         <RequireRole roles={[...AUDIT_ROLES]}>
+            //             {withPageLoader(<AuditPage />)}
+            //         </RequireRole>
+            //     ),
+            // },
+            // {
+            //     path: 'admin/config',
+            //     element: (
+            //         <RequireRole roles={[...ADMIN_ROLES]}>
+            //             {withPageLoader(<ConfigPage />)}
+            //         </RequireRole>
+            //     ),
+            // },
             {
                 path: '*',
                 element: withPageLoader(<NotFoundPage />),
