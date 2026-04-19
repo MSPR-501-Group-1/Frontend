@@ -1,19 +1,68 @@
 # Lighthouse Accessibility Runbook
 
-Version: 2.0
+Version: 2.2
 Scope: HealthAI Admin - audits Lighthouse accessibilite
 
-Ce runbook couvre le pipeline a11y avec authentification reelle (token JWT backend ou login backend) et remplace le flux historique base sur profils mock.
+Ce document est un guide pas a pas pour executer les audits Lighthouse, meme si vous decouvrez le projet.
+L objectif est de vous permettre de passer d un clone neuf du repo a un rapport exploitable, sans supposer de connaissance interne.
+
+## Sommaire
+
+1. [Objectif](#1-objectif)
+2. [Vue d ensemble (comment ca marche)](#2-vue-densemble-comment-ca-marche)
+3. [Pre-requis](#3-pre-requis)
+4. [Demarrage depuis un clone neuf](#4-demarrage-depuis-un-clone-neuf)
+5. [Choisir votre strategie d audit](#5-choisir-votre-strategie-daudit)
+6. [Commandes standards npm](#6-commandes-standards-npm)
+7. [Procedure recommandee (A a E)](#7-procedure-recommandee-a-a-e)
+8. [Arguments CLI et variables d environnement](#8-arguments-cli-et-variables-denvironnement)
+9. [Lire les resultats](#9-lire-les-resultats)
+10. [Depannage rapide](#10-depannage-rapide)
+11. [Regles de securite](#11-regles-de-securite)
+12. [Checklist avant PR](#12-checklist-avant-pr)
 
 ## 1. Objectif
 
-Produire des rapports Lighthouse accessibilite reproductibles sur routes publiques et protegees, avec un bootstrap compatible Zustand persist (`healthai-auth` en localStorage).
+Produire des rapports Lighthouse accessibilite reproductibles sur les routes publiques et protegees de l application.
 
-## 2. Pre-requis
+Le runbook couvre:
+
+- execution des audits
+- choix du mode d authentification
+- interpretation des sorties
+
+Le runbook ne couvre pas:
+
+- benchmark performance detaille
+- strategie de deploiement production
+
+## 2. Vue d ensemble (comment ca marche)
+
+Pipeline simplifie:
+
+1. Le runner lit les routes a auditer dans `scripts/lighthouse-routes.json`.
+2. Il prepare un contexte UI (theme, high contrast).
+3. Pour les routes protegees, il prepare un contexte auth (mode none/token/real-login/auto).
+4. Il ouvre une page bootstrap locale qui injecte l etat attendu dans le store persiste.
+5. Lighthouse audite la route ciblee et produit un JSON par route.
+6. Le script genere `summary.json`, `summary.md` et met a jour `latest.json`.
+
+## 3. Pre-requis
+
+### Outils
 
 - Docker + Docker Compose
-- Node.js 22+
+- Node.js 22.12+
 - npm
+
+### Emplacement des commandes
+
+- commandes Docker: racine projet
+- commandes Lighthouse: `frontend/healthai-admin`
+
+## 4. Demarrage depuis un clone neuf
+
+### Etape 1 - Monter les services
 
 Depuis la racine projet:
 
@@ -22,96 +71,161 @@ docker compose -f docker-compose.yml up -d --build frontend backend
 docker compose -f docker-compose.yml ps
 ```
 
-Depuis `frontend/healthai-admin`:
+Attendu: `frontend`, `backend` et `db` en statut `Up`/`healthy`.
+
+### Etape 2 - Installer les dependances frontend
 
 ```powershell
+Set-Location frontend/healthai-admin
 npm ci
+```
+
+### Etape 3 - Verifier la configuration avec un dry-run
+
+```powershell
 npm run audit:a11y:normal:dry
 ```
 
-## 3. Changement majeur (migration)
+Si le dry-run passe, la configuration est exploitable.
 
-Le runner ne depend plus des profils mock (`lighthouse-auth-profiles.json`) pour simuler un user.
+## 5. Choisir votre strategie d audit
 
-Nouveaux modes d auth:
+Vous avez 4 modes d authentification:
 
-- `--auth-mode=none`: aucune auth (routes publiques)
-- `--auth-mode=token`: JWT reel fourni
-- `--auth-mode=real-login`: login backend email/password
-- `--auth-mode=auto` (defaut): choisit `token`, sinon `real-login`, sinon `none`
+- `none`: pas d auth (routes publiques)
+- `token`: JWT deja disponible
+- `real-login`: login backend email/password
+- `auto`: essaye `token`, sinon `real-login`, sinon `none`
 
-## 4. Commandes standards
+Recommandation pratique:
 
-Toutes les commandes ci-dessous s executent dans `frontend/healthai-admin`.
+- audit global projet: `real-login`
+- audit route publique uniquement: `none`
+- CI securisee avec secret JWT: `token`
 
-Audit complet preset:
+## 6. Commandes standards npm
+
+Toutes les commandes de cette section s executent dans `frontend/healthai-admin`.
+
+### 6.1 Difference explicite: npm run vs node + flags
+
+Ce point est essentiel pour eviter la confusion:
+
+- `npm run <script>`: lance un preset deja defini dans `package.json`.
+- `node scripts/run-lighthouse-batch.mjs <flags>`: lance le meme moteur, mais vous choisissez vous meme toutes les options.
+
+Equivalences directes:
+
+- `npm run audit:a11y`
+	== `node scripts/run-lighthouse-batch.mjs`
+- `npm run audit:a11y:normal`
+	== `node scripts/run-lighthouse-batch.mjs --ui-high-contrast=false --ui-theme=light`
+- `npm run audit:a11y:normal:dry`
+	== `node scripts/run-lighthouse-batch.mjs --ui-high-contrast=false --ui-theme=light --dry-run`
+- `npm run audit:a11y:hc`
+	== `node scripts/run-lighthouse-batch.mjs --ui-high-contrast=true --ui-theme=light`
+- `npm run audit:a11y:hc:dry`
+	== `node scripts/run-lighthouse-batch.mjs --ui-high-contrast=true --ui-theme=light --dry-run`
+
+Regle de choix simple:
+
+- utilisez `npm run` pour les cas standards (rapide, reproductible, equipe).
+- utilisez `node ... --flags` si vous avez un besoin specifique: `--auth-mode`, `--only-routes`, `--run-id`, `--base-url`, etc.
+
+### 6.2 Audit complet
 
 ```powershell
 npm run audit:a11y
 ```
 
-Audit normal:
+### 6.3 Audit normal (theme light, contraste normal)
 
 ```powershell
 npm run audit:a11y:normal
 ```
 
-Audit high contrast:
+### 6.4 Audit high contrast
 
 ```powershell
 npm run audit:a11y:hc
 ```
 
-Dry-run:
+### 6.5 Dry-run
 
 ```powershell
-npm run audit:a11y:hc:dry
+npm run audit:a11y:normal:dry
 ```
 
-## 5. Auth reelle - exemples PowerShell
+## 7. Procedure recommandee (A a E)
 
-### 5.1 Mode token JWT reel (route protegee ciblee)
+### A) Verifier les routes auditees
 
-```powershell
-$env:A11Y_AUTH_MODE='token'
-$env:A11Y_AUTH_TOKEN='<JWT_REEL>'
-$env:A11Y_AUTH_USER_JSON='{"user_id":"u-admin-1","email":"admin@healthai.local","first_name":"Admin","last_name":"Audit","role_type":"ADMIN"}'
-$env:A11Y_ONLY_ROUTES='/admin/audit'
-node scripts/run-lighthouse-batch.mjs --ui-theme=light --ui-high-contrast=false
-Remove-Item Env:A11Y_AUTH_MODE
-Remove-Item Env:A11Y_AUTH_TOKEN
-Remove-Item Env:A11Y_AUTH_USER_JSON
-Remove-Item Env:A11Y_ONLY_ROUTES
-```
+Fichier: `scripts/lighthouse-routes.json`
 
-### 5.2 Mode login backend reel (email/password)
+Regles:
+
+- chaque route commence par `/`
+- pas de doublons
+- ajouter toute nouvelle page metier
+
+### B) Choisir le mode auth
+
+#### Option 1 - `real-login` (recommande en local)
+
+Exemple (seed local):
 
 ```powershell
 $env:A11Y_AUTH_MODE='real-login'
 $env:A11Y_AUTH_LOGIN_URL='/api/auth/login'
-$env:A11Y_AUTH_EMAIL='admin@healthai.local'
-$env:A11Y_AUTH_PASSWORD='<MOT_DE_PASSE_REEL>'
-$env:A11Y_ONLY_ROUTES='/admin/audit'
-node scripts/run-lighthouse-batch.mjs --ui-theme=light --ui-high-contrast=false
-Remove-Item Env:A11Y_AUTH_MODE
-Remove-Item Env:A11Y_AUTH_LOGIN_URL
-Remove-Item Env:A11Y_AUTH_EMAIL
-Remove-Item Env:A11Y_AUTH_PASSWORD
-Remove-Item Env:A11Y_ONLY_ROUTES
+$env:A11Y_AUTH_EMAIL='admin@healthapp.com'
+$env:A11Y_AUTH_PASSWORD='AdminPass!'
 ```
 
-Notes:
+#### Option 2 - `token`
 
-- En mode `token`, `--auth-user-json` ou `--auth-user-file` est recommande.
-- Si `--auth-user-json`/`--auth-user-file` est absent, le runner tente `--auth-me-url` (defaut `/api/auth/me`).
-- Aucun token n est ecrit dans `summary.json` ou `latest.json`.
+```powershell
+$env:A11Y_AUTH_MODE='token'
+$env:A11Y_AUTH_TOKEN='<JWT_REEL>'
+$env:A11Y_AUTH_USER_JSON='{"user_id":"USR_007","email":"admin@healthapp.com","first_name":"Admin","last_name":"System","role_type":"ADMIN"}'
+```
 
-## 6. Arguments CLI du runner
+### C) Lancer un run cible (validation rapide)
+
+```powershell
+$env:A11Y_ONLY_ROUTES='/admin/users'
+node scripts/run-lighthouse-batch.mjs --ui-theme=light --ui-high-contrast=false --run-id=local-check-admin-users
+```
+
+### D) Lancer un run complet
+
+```powershell
+npm run audit:a11y:normal
+npm run audit:a11y:hc
+```
+
+### E) Nettoyer les variables env (important)
+
+```powershell
+Remove-Item Env:A11Y_AUTH_MODE -ErrorAction SilentlyContinue
+Remove-Item Env:A11Y_AUTH_LOGIN_URL -ErrorAction SilentlyContinue
+Remove-Item Env:A11Y_AUTH_EMAIL -ErrorAction SilentlyContinue
+Remove-Item Env:A11Y_AUTH_PASSWORD -ErrorAction SilentlyContinue
+Remove-Item Env:A11Y_AUTH_TOKEN -ErrorAction SilentlyContinue
+Remove-Item Env:A11Y_AUTH_USER_JSON -ErrorAction SilentlyContinue
+Remove-Item Env:A11Y_ONLY_ROUTES -ErrorAction SilentlyContinue
+Remove-Item Env:A11Y_RUN_ID -ErrorAction SilentlyContinue
+```
+
+## 8. Arguments CLI et variables d environnement
 
 Script: `node scripts/run-lighthouse-batch.mjs`
 
+Rappel: les scripts `npm run audit:a11y*` sont des raccourcis vers cette commande Node avec des flags predefinis (voir section 6.1).
+
+### 8.1 Arguments CLI
+
 1. `--dry-run`
-- role: affiche les commandes Lighthouse sans generer les rapports
+- role: affiche les commandes Lighthouse sans executer les audits
 
 2. `--base-url=<url>`
 - defaut: `http://localhost:5173`
@@ -129,7 +243,7 @@ Script: `node scripts/run-lighthouse-batch.mjs`
 - defaut: `scripts/lighthouse-routes.json`
 
 7. `--only-routes=/r1,/r2`
-- limite le run aux routes ciblees
+- limite le run a certaines routes
 
 8. `--out-dir=<path>`
 - defaut: `../lighthouse/a11y-batch-reports`
@@ -147,15 +261,13 @@ Script: `node scripts/run-lighthouse-batch.mjs`
 - user explicite pour mode `token`
 
 13. `--auth-user-file=<path-json>`
-- alternative fichier pour le user du mode `token`
+- alternative fichier pour mode `token`
 
 14. `--auth-me-url=<url>`
 - defaut: `/api/auth/me`
-- appele pour resoudre le user en mode `token` si user non fourni
 
 15. `--auth-login-url=<url>`
 - defaut: `/api/auth/login`
-- utilise en mode `real-login`
 
 16. `--auth-email=<email>`
 - utilise en mode `real-login`
@@ -165,9 +277,8 @@ Script: `node scripts/run-lighthouse-batch.mjs`
 
 18. `--auth-fallback-role=<role>`
 - defaut: `ADMIN`
-- complete le user si `role_type` n est pas retourne par le backend
 
-## 7. Variables d environnement supportees
+### 8.2 Variables d environnement supportees
 
 - `A11Y_ONLY_ROUTES`
 - `A11Y_UI_HIGH_CONTRAST`
@@ -183,30 +294,85 @@ Script: `node scripts/run-lighthouse-batch.mjs`
 - `A11Y_AUTH_PASSWORD`
 - `A11Y_AUTH_FALLBACK_ROLE`
 
-## 8. Procedure recommandee
+## 9. Lire les resultats
 
-1. Demarrer frontend + backend.
-2. Lancer dry-run.
-3. Lancer un run cible sur route protegee en auth reelle.
-4. Verifier `finalDisplayedUrl` et `matchedTargetRoute` dans `summary.json`.
+Sorties generees dans:
 
-Exemple rapide:
+- `../lighthouse/a11y-batch-reports`
+
+Structure:
+
+- dossier par run: `<run-id>_<theme>-<contrast>-<authmode>/`
+- rapports route: `public_<route>.json` ou `auth_<route>.json`
+- syntheses: `summary.json` et `summary.md`
+- pointeurs courants: `latest.json`, `latest/summary.json`, `latest/summary.md`
+
+Lecture rapide:
 
 ```powershell
-npm run audit:a11y:normal:dry
-$env:A11Y_AUTH_MODE='token'
-$env:A11Y_AUTH_TOKEN='<JWT_REEL>'
-$env:A11Y_AUTH_USER_JSON='{"user_id":"u-admin-1","email":"admin@healthai.local","first_name":"Admin","last_name":"Audit","role_type":"ADMIN"}'
-$env:A11Y_ONLY_ROUTES='/admin/audit'
-node scripts/run-lighthouse-batch.mjs --ui-theme=light --ui-high-contrast=false
-Remove-Item Env:A11Y_AUTH_MODE
-Remove-Item Env:A11Y_AUTH_TOKEN
-Remove-Item Env:A11Y_AUTH_USER_JSON
-Remove-Item Env:A11Y_ONLY_ROUTES
+Get-Content ../lighthouse/a11y-batch-reports/latest.json
+Get-Content ../lighthouse/a11y-batch-reports/latest/summary.json
 ```
 
-## 9. Resultats attendus
+Point cle de validation:
 
-- Pour `/admin/audit`, `finalDisplayedUrl` doit rester sur la route protegee ciblee (pas `/login`).
-- Les routes publiques restent auditables avec `auth-mode=none` ou `auto` sans credentials.
-- `summary.json` et `latest.json` ne contiennent pas de token brut.
+- `finalDisplayedUrl` doit correspondre a la route ciblee.
+- pour une route protegee comme `/admin/users`, ne pas finir sur `/login`.
+
+## 10. Depannage rapide
+
+### Erreur `unknown route` avec `--only-routes`
+
+Cause probable:
+
+- route absente de `scripts/lighthouse-routes.json`
+
+Action:
+
+- ajouter la route dans `public` ou `protected`
+
+### Une route protegee redirige vers `/login`
+
+Causes probables:
+
+- mode auth `none` utilise par erreur
+- creds invalides en mode `real-login`
+- user sans role suffisant
+
+Actions:
+
+- verifier `A11Y_AUTH_MODE`
+- verifier email/password ou token
+- fournir `A11Y_AUTH_USER_JSON` avec `role_type` correct
+
+### Les options sont ignorees avec `npm run` sous Windows
+
+Action:
+
+- utiliser directement `node scripts/run-lighthouse-batch.mjs ...`
+
+### Erreur de bootstrap local
+
+Cause probable:
+
+- `--base-url` non local
+
+Action:
+
+- utiliser `localhost` ou `127.0.0.1`
+
+## 11. Regles de securite
+
+- Ne pas mettre de token reel en dur dans un fichier versionne.
+- Ne pas commiter de credentials dans la doc.
+- Nettoyer les variables env apres execution.
+- Verifier que les sorties `summary.json`/`latest.json` ne contiennent pas de token brut.
+
+## 12. Checklist avant PR
+
+1. Routes manifest aligne avec le routeur frontend.
+2. Dry-run execute sans erreur.
+3. Un run reel cible route publique + route protegee valide.
+4. `finalDisplayedUrl` correct sur les routes protegees.
+5. `latest.json` pointe vers le dernier run attendu.
+6. Aucun secret dans la documentation ou les artefacts commits.
