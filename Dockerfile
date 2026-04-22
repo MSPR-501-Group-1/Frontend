@@ -25,55 +25,17 @@ COPY healthai-admin/ .
 
 RUN npm run build
 
-# ── Stage 2 — Production (Nginx) ────────────────────────────
+# ── Stage 2 — Production (Nginx) ─────────────────────────────
 FROM nginx:stable-alpine AS production
 
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Minimal Nginx config — SPA fallback to index.html
+# Copy built React app
 COPY --from=build /app/dist /usr/share/nginx/html
 
-RUN printf 'server {\n\
-    listen 80;\n\
-    server_name _;\n\
-    root /usr/share/nginx/html;\n\
-    index index.html;\n\
-    \n\
-    # Reverse proxy for API requests\n\
-    location /api/files/ {\n\
-    proxy_pass http://backend:3000/api/files/;\n\
-    proxy_http_version 1.1;\n\
-    proxy_set_header Host $host;\n\
-    proxy_set_header X-Real-IP $remote_addr;\n\
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
-    proxy_set_header X-Forwarded-Proto $scheme;\n\
-    }\n\
-    \n\
-    location /api/ {\n\
-    proxy_pass http://backend:3000/;\n\
-    proxy_http_version 1.1;\n\
-    proxy_set_header Host $host;\n\
-    proxy_set_header X-Real-IP $remote_addr;\n\
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
-    proxy_set_header X-Forwarded-Proto $scheme;\n\
-    }\n\
-    \n\
-    # SPA: redirect all non-file requests to index.html\n\
-    location / {\n\
-    try_files $uri $uri/ /index.html;\n\
-    }\n\
-    \n\
-    # Cache static assets aggressively\n\
-    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {\n\
-    expires 1y;\n\
-    add_header Cache-Control "public, immutable";\n\
-    }\n\
-    \n\
-    # Security headers\n\
-    add_header X-Frame-Options "SAMEORIGIN" always;\n\
-    add_header X-Content-Type-Options "nosniff" always;\n\
-    }\n' > /etc/nginx/conf.d/default.conf
+# Copy nginx config (much more readable than RUN printf)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
