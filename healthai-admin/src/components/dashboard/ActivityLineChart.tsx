@@ -1,4 +1,5 @@
 import { Card, Typography, Box } from '@mui/material';
+import { useId } from 'react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, ReferenceLine,
@@ -9,6 +10,7 @@ import {
 } from '@/lib/chart.constants';
 import { formatShortDate, formatTooltipDate, formatNumber } from '@/lib/formatters';
 import type { TimeSeriesPoint } from '@/types';
+import ChartDataTable from './ChartDataTable';
 
 interface ActivityLineChartProps {
     data: TimeSeriesPoint[];
@@ -25,23 +27,36 @@ export default function ActivityLineChart({
     color = '#2563EB',
     showTarget = true,
 }: ActivityLineChartProps) {
+    const chartId = useId();
+    const titleId = `${chartId}-title`;
+    const descriptionId = `${chartId}-description`;
+
     const targetValue = showTarget ? data[0]?.target : undefined;
     const gradientId = `gradient-${color.replace('#', '')}`;
 
     // Compute avg for reference
-    const avg = Math.round(data.reduce((s, p) => s + p.value, 0) / data.length);
+    const avg = data.length > 0
+        ? Math.round(data.reduce((s, p) => s + p.value, 0) / data.length)
+        : 0;
 
     return (
-        <Card sx={{ p: 2.5, height: '100%' }}>
+        <Card component="section" aria-labelledby={titleId} sx={{ p: 2.5, height: '100%' }}>
             <Box sx={{ mb: 2 }}>
-                <Typography variant="h6">{title}</Typography>
+                <Typography id={titleId} variant="h6" component="h3">
+                    {title}
+                </Typography>
                 {subtitle && (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography id={descriptionId} variant="body2" color="text.secondary">
                         {subtitle}
                     </Typography>
                 )}
             </Box>
-            <Box sx={{ width: '100%', height: 300 }} role="img" aria-label={title}>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Visualisation graphique accompagnée d'un tableau de données accessible ci-dessous.
+            </Typography>
+
+            <Box sx={{ width: '100%', height: 300 }} aria-hidden="true">
                 <ResponsiveContainer>
                     <AreaChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                         <defs>
@@ -93,6 +108,22 @@ export default function ActivityLineChart({
                     </AreaChart>
                 </ResponsiveContainer>
             </Box>
+
+            <ChartDataTable<TimeSeriesPoint>
+                title={title}
+                rowHeaderKey="date"
+                columns={[
+                    { key: 'date', label: 'Date', format: (value) => formatTooltipDate(value) },
+                    { key: 'value', label: 'Valeur', format: (value) => formatNumber(Number(value ?? 0)) },
+                    {
+                        key: 'target',
+                        label: 'Objectif',
+                        format: (value) => (typeof value === 'number' ? formatNumber(value) : '-'),
+                    },
+                ]}
+                rows={data}
+                summaryLabel={`Afficher les données tabulaires de ${title}`}
+            />
         </Card>
     );
 }

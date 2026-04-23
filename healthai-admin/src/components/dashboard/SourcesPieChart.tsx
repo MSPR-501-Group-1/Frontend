@@ -1,4 +1,5 @@
 import { Card, Typography, Box } from '@mui/material';
+import { useId } from 'react';
 import {
     PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
@@ -7,6 +8,9 @@ import {
     LEGEND_STYLE, LEGEND_ICON_SIZE, LEGEND_ICON_TYPE,
 } from '@/lib/chart.constants';
 import type { CategoryDataPoint } from '@/types';
+import ChartDataTable from './ChartDataTable';
+
+const ACCESSIBLE_PIE_COLORS = ['#1D4ED8', '#B91C1C', '#166534', '#6D28D9', '#0F766E', '#9A3412'];
 
 interface SourcesPieChartProps {
     data: CategoryDataPoint[];
@@ -15,19 +19,28 @@ interface SourcesPieChartProps {
 }
 
 export default function SourcesPieChart({ data, title, subtitle }: SourcesPieChartProps) {
+    const chartId = useId();
+    const titleId = `${chartId}-title`;
     const total = data.reduce((s, d) => s + d.value, 0);
 
     return (
-        <Card sx={{ p: 2.5, height: '100%' }}>
+        <Card component="section" aria-labelledby={titleId} sx={{ p: 2.5, height: '100%' }}>
             <Box sx={{ mb: 2 }}>
-                <Typography variant="h6">{title}</Typography>
+                <Typography id={titleId} variant="h6" component="h3">
+                    {title}
+                </Typography>
                 {subtitle && (
                     <Typography variant="body2" color="text.secondary">
                         {subtitle}
                     </Typography>
                 )}
             </Box>
-            <Box sx={{ width: '100%', height: 320, position: 'relative' }} role="img" aria-label={title}>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Visualisation graphique accompagnée d'un tableau de données accessible ci-dessous.
+            </Typography>
+
+            <Box sx={{ width: '100%', height: 320, position: 'relative' }} aria-hidden="true">
                 {/* Center label */}
                 <Box
                     sx={{
@@ -65,7 +78,7 @@ export default function SourcesPieChart({ data, title, subtitle }: SourcesPieCha
                             {data.map((entry, idx) => (
                                 <Cell
                                     key={entry.name}
-                                    fill={entry.color ?? `hsl(${idx * 72}, 70%, 55%)`}
+                                    fill={entry.color ?? ACCESSIBLE_PIE_COLORS[idx % ACCESSIBLE_PIE_COLORS.length]}
                                     stroke="none"
                                 />
                             ))}
@@ -85,6 +98,17 @@ export default function SourcesPieChart({ data, title, subtitle }: SourcesPieCha
                     </PieChart>
                 </ResponsiveContainer>
             </Box>
+
+            <ChartDataTable<CategoryDataPoint>
+                title={title}
+                rowHeaderKey="name"
+                columns={[
+                    { key: 'name', label: 'Source' },
+                    { key: 'value', label: 'Part (%)', format: (value) => `${Number(value ?? 0)}%` },
+                ]}
+                rows={data}
+                summaryLabel={`Afficher les données tabulaires de ${title}`}
+            />
         </Card>
     );
 }

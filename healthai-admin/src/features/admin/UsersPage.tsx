@@ -20,6 +20,7 @@ import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsers, createUser, updateUserRole } from '@/services/users.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
+import AccessibleColumnHeaderSortIcon from '@/components/shared/AccessibleColumnHeaderSortIcon';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
 import { getErrorMessage } from '@/lib/error.utils';
@@ -258,6 +259,7 @@ export default function UsersPage() {
                     getRowId={(row) => row.user_id}
                     columns={columns}
                     aria-label="Tableau des utilisateurs"
+                    slots={{ columnHeaderSortIcon: AccessibleColumnHeaderSortIcon }}
                     initialState={{
                         sorting: { sortModel: [{ field: 'fullName', sort: 'asc' }] },
                         pagination: { paginationModel: { pageSize: 10 } },

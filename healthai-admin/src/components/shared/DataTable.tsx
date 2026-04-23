@@ -19,6 +19,7 @@
 import { Paper } from '@mui/material';
 import { DataGrid, type GridColDef, type GridSortModel } from '@mui/x-data-grid';
 import { EmptyState } from '@/components/feedback';
+import AccessibleColumnHeaderSortIcon from './AccessibleColumnHeaderSortIcon';
 import {
     DATAGRID_SX,
     DEFAULT_PAGE_SIZE_OPTIONS,
@@ -74,6 +75,7 @@ export default function DataTable<R extends { id: string | number }>({
                 rows={rows}
                 columns={columns}
                 aria-label={ariaLabel}
+                slots={{ columnHeaderSortIcon: AccessibleColumnHeaderSortIcon }}
                 initialState={{
                     sorting: defaultSort
                         ? { sortModel: [defaultSort] }

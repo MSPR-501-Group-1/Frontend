@@ -11,9 +11,22 @@ interface PageHeaderProps {
     subtitle?: string;
     /** Optional right-aligned actions (filters, buttons, etc.) */
     actions?: React.ReactNode;
+    /** Optional id for heading association */
+    titleId?: string;
+    /** Optional id for subtitle association */
+    subtitleId?: string;
+    /** Heading element, defaults to h1 for page title semantics */
+    titleComponent?: React.ElementType;
 }
 
-export default function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
+export default function PageHeader({
+    title,
+    subtitle,
+    actions,
+    titleId,
+    subtitleId,
+    titleComponent = 'h1',
+}: PageHeaderProps) {
     return (
         <Box
             sx={{
@@ -26,9 +39,11 @@ export default function PageHeader({ title, subtitle, actions }: PageHeaderProps
             }}
         >
             <Box>
-                <Typography variant="h4">{title}</Typography>
+                <Typography id={titleId} variant="h4" component={titleComponent}>
+                    {title}
+                </Typography>
                 {subtitle && (
-                    <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                    <Typography id={subtitleId} color="text.secondary" sx={{ mt: 0.5 }}>
                         {subtitle}
                     </Typography>
                 )}

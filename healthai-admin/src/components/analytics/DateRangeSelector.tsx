@@ -1,4 +1,4 @@
-import { ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { ToggleButton, ToggleButtonGroup, Box } from '@mui/material';
 import type { DateRange } from '@/types';
 
 interface DateRangeSelectorProps {
@@ -21,27 +21,47 @@ export default function DateRangeSelector({ value, onChange }: DateRangeSelector
     };
 
     return (
-        <ToggleButtonGroup
-            value={value}
-            exclusive
-            onChange={handleChange}
-            size="small"
-            aria-label="Sélecteur de période"
-        >
-            {OPTIONS.map((opt) => (
-                <ToggleButton
-                    key={opt.value}
-                    value={opt.value}
-                    sx={{
-                        px: 2,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.8rem',
-                    }}
-                >
-                    {opt.label}
-                </ToggleButton>
-            ))}
-        </ToggleButtonGroup>
+        <Box component="fieldset" sx={{ border: 0, p: 0, m: 0 }}>
+            <Box
+                component="legend"
+                sx={{
+                    position: 'absolute',
+                    width: 1,
+                    height: 1,
+                    p: 0,
+                    m: -1,
+                    overflow: 'hidden',
+                    clip: 'rect(0 0 0 0)',
+                    whiteSpace: 'nowrap',
+                    border: 0,
+                }}
+            >
+                Choisir la période d'analyse du dashboard
+            </Box>
+
+            <ToggleButtonGroup
+                value={value}
+                exclusive
+                onChange={handleChange}
+                size="small"
+                aria-label="Sélecteur de période"
+            >
+                {OPTIONS.map((opt) => (
+                    <ToggleButton
+                        key={opt.value}
+                        value={opt.value}
+                        aria-label={`Afficher la période: ${opt.label}`}
+                        sx={{
+                            px: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                        }}
+                    >
+                        {opt.label}
+                    </ToggleButton>
+                ))}
+            </ToggleButtonGroup>
+        </Box>
     );
 }

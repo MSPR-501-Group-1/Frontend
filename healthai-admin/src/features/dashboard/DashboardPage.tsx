@@ -59,12 +59,20 @@ export default function DashboardPage() {
         { field: 'status', headerName: 'Statut' },
     ];
 
+    const sectionHeadingSx = {
+        mb: 2,
+        fontSize: { xs: '1.15rem', md: '1.25rem' },
+    };
+
     return (
-        <Box>
+        <Box component="section" aria-labelledby="dashboard-title">
             {/* Page title — uses shared PageHeader for consistency */}
             <PageHeader
                 title="Dashboard"
                 subtitle="Vue d'ensemble des indicateurs clés et de la qualité des flux de données."
+                titleId="dashboard-title"
+                subtitleId="dashboard-subtitle"
+                titleComponent="h1"
                 actions={
                     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                         <DateRangeSelector value={range} onChange={setRange} />
@@ -78,92 +86,109 @@ export default function DashboardPage() {
                 }
             />
 
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }} aria-live="polite">
+                Période affichée: {rangeLabel[range]}.
+            </Typography>
+
             {/* KPI Cards */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-                {kpis.map((kpi) => (
-                    <Grid key={kpi.id} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
-                        <KPICard
-                            label={kpi.label}
-                            value={kpi.value}
-                            unit={kpi.unit}
-                            trend={kpi.trend}
-                            status={kpi.status}
-                            to={KPI_DRILLDOWN_ROUTES[kpi.id]}
-                        />
-                    </Grid>
-                ))}
-            </Grid>
+            <Box component="section" aria-labelledby="dashboard-kpi-title" sx={{ mb: 3 }}>
+                <Typography id="dashboard-kpi-title" variant="h5" component="h2" sx={sectionHeadingSx}>
+                    Indicateurs clés
+                </Typography>
+                <Grid container spacing={2} component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
+                    {kpis.map((kpi) => (
+                        <Grid component="li" key={kpi.id} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+                            <KPICard
+                                label={kpi.label}
+                                value={kpi.value}
+                                unit={kpi.unit}
+                                trend={kpi.trend}
+                                status={kpi.status}
+                                to={KPI_DRILLDOWN_ROUTES[kpi.id]}
+                            />
+                        </Grid>
+                    ))}
+                </Grid>
+            </Box>
 
             {/* Section: Tendances */}
-            <Typography variant="h5" sx={{ mb: 2 }}>
-                Tendances
-            </Typography>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <ActivityLineChart
-                        data={userActivity}
-                        title="Utilisateurs actifs"
-                        subtitle={`Évolution sur ${rangeLabel[range]}`}
-                    />
+            <Box component="section" aria-labelledby="dashboard-trends-title" sx={{ mb: 3 }}>
+                <Typography id="dashboard-trends-title" variant="h5" component="h2" sx={sectionHeadingSx}>
+                    Tendances
+                </Typography>
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <ActivityLineChart
+                            data={userActivity}
+                            title="Utilisateurs actifs"
+                            subtitle={`Évolution sur ${rangeLabel[range]}`}
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <ActivityLineChart
+                            data={dataQualityTrend}
+                            title="Score qualité données"
+                            subtitle={`Progression sur ${rangeLabel[range]}`}
+                            color="#166534"
+                        />
+                    </Grid>
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <ActivityLineChart
-                        data={dataQualityTrend}
-                        title="Score qualité données"
-                        subtitle={`Progression sur ${rangeLabel[range]}`}
-                        color="#16A34A"
-                    />
-                </Grid>
-            </Grid>
+            </Box>
 
             {/* Section: Volume d'ingestion */}
-            <Typography variant="h5" sx={{ mb: 2 }}>
-                Volume d'ingestion
-            </Typography>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12 }}>
-                    <DataIngestionAreaChart
-                        data={dataIngestion}
-                        title="Enregistrements ingérés par source"
-                        subtitle={`Stacked area — ${rangeLabel[range]}`}
-                    />
+            <Box component="section" aria-labelledby="dashboard-ingestion-title" sx={{ mb: 3 }}>
+                <Typography id="dashboard-ingestion-title" variant="h5" component="h2" sx={sectionHeadingSx}>
+                    Volume d'ingestion
+                </Typography>
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 12 }}>
+                        <DataIngestionAreaChart
+                            data={dataIngestion}
+                            title="Enregistrements ingérés par source"
+                            subtitle={`Stacked area — ${rangeLabel[range]}`}
+                        />
+                    </Grid>
                 </Grid>
-            </Grid>
+            </Box>
 
             {/* Section: Répartition & Anomalies */}
-            <Typography variant="h5" sx={{ mb: 2 }}>
-                Répartition & Anomalies
-            </Typography>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <SourcesPieChart
-                        data={dataSources}
-                        title="Sources de données"
-                        subtitle="Répartition par domaine de santé"
-                    />
+            <Box component="section" aria-labelledby="dashboard-repartition-title" sx={{ mb: 3 }}>
+                <Typography id="dashboard-repartition-title" variant="h5" component="h2" sx={sectionHeadingSx}>
+                    Répartition et anomalies
+                </Typography>
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <SourcesPieChart
+                            data={dataSources}
+                            title="Sources de données"
+                            subtitle="Répartition par domaine de santé"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <AnomaliesBarChart
+                            data={anomaliesByType}
+                            title="Anomalies par type"
+                            subtitle={`Volume observé sur ${rangeLabel[range]}`}
+                        />
+                    </Grid>
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <AnomaliesBarChart
-                        data={anomaliesByType}
-                        title="Anomalies par type"
-                        subtitle={`Volume observé sur ${rangeLabel[range]}`}
-                    />
-                </Grid>
-            </Grid>
+            </Box>
 
             {/* Section: Suivi des anomalies */}
-            <Typography variant="h5" sx={{ mb: 2 }}>
-                Suivi des anomalies
-            </Typography>
-            <Grid container spacing={2}>
-                <Grid size={{ xs: 12 }}>
-                    <AnomalyTrendChart
-                        data={anomalyTrend}
-                        title="Nouvelles vs Résolues"
-                        subtitle={`Évolution des détections et résolutions — ${rangeLabel[range]}`}
-                    />
+            <Box component="section" aria-labelledby="dashboard-followup-title">
+                <Typography id="dashboard-followup-title" variant="h5" component="h2" sx={sectionHeadingSx}>
+                    Suivi des anomalies
+                </Typography>
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 12 }}>
+                        <AnomalyTrendChart
+                            data={anomalyTrend}
+                            title="Nouvelles vs Résolues"
+                            subtitle={`Évolution des détections et résolutions — ${rangeLabel[range]}`}
+                        />
+                    </Grid>
                 </Grid>
-            </Grid>
+            </Box>
         </Box>
     );
 }

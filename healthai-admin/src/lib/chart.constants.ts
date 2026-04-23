@@ -10,7 +10,7 @@
 
 // ─── Axis & Grid ────────────────────────────────────────────
 
-export const AXIS_TICK_STYLE = { fontSize: 11, fill: '#94A3B8' } as const;
+export const AXIS_TICK_STYLE = { fontSize: 11, fill: '#334155' } as const;
 export const AXIS_LINE_STYLE = { stroke: '#E2E8F0' } as const;
 export const GRID_STROKE = '#E2E8F0';
 export const GRID_DASH = '3 3';
@@ -37,11 +37,11 @@ export const ANIMATION_DURATION_SLOW = 1400;
 
 // ─── Label line ─────────────────────────────────────────────
 
-export const LABEL_LINE_STYLE = { stroke: '#94A3B8', strokeWidth: 1 };
+export const LABEL_LINE_STYLE = { stroke: '#475569', strokeWidth: 1 };
 
 // ─── Reference line ─────────────────────────────────────────
 
 export const REFERENCE_LINE_COLORS = {
     target: '#DC2626',
-    average: '#94A3B8',
+    average: '#475569',
 } as const;
