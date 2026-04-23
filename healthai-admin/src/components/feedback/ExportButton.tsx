@@ -10,7 +10,7 @@
  *   />
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import {
     Button,
     Menu,
@@ -51,6 +51,8 @@ export default function ExportButton({
 }: ExportButtonProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
+    const menuId = useId();
+    const buttonId = `${menuId}-button`;
 
     const handleOpen = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(e.currentTarget);
@@ -73,28 +75,32 @@ export default function ExportButton({
     return (
         <>
             <Button
+                id={buttonId}
                 variant="outlined"
                 startIcon={<FileDownloadIcon />}
                 onClick={handleOpen}
                 disabled={disabled || rows.length === 0}
                 aria-label="Exporter les données"
-                aria-haspopup="true"
-                aria-expanded={open}
+                aria-haspopup="menu"
+                aria-controls={open ? menuId : undefined}
+                aria-expanded={open ? 'true' : undefined}
             >
                 Exporter
             </Button>
             <Menu
+                id={menuId}
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                MenuListProps={{ 'aria-labelledby': buttonId }}
             >
-                <MenuItem onClick={handleCSV}>
+                <MenuItem onClick={handleCSV} aria-label="Exporter les données au format CSV">
                     <ListItemIcon><CsvIcon fontSize="small" /></ListItemIcon>
                     <ListItemText>Exporter en CSV</ListItemText>
                 </MenuItem>
-                <MenuItem onClick={handlePDF}>
+                <MenuItem onClick={handlePDF} aria-label="Exporter les données au format PDF">
                     <ListItemIcon><PdfIcon fontSize="small" /></ListItemIcon>
                     <ListItemText>Exporter en PDF</ListItemText>
                 </MenuItem>

@@ -1,6 +1,6 @@
 import { Card, CardActionArea, Typography, Box, Chip } from '@mui/material';
 import { TrendingUp, TrendingDown, Remove } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import type { KPIStatus } from '@/types';
 
 interface KPICardProps {
@@ -27,10 +27,9 @@ export default function KPICard({
     trend,
     trendUnit = '%',
     trendPositiveIsGood = true,
+    status,
     to,
 }: KPICardProps) {
-    const navigate = useNavigate();
-
     const hasTrend = typeof trend === 'number' && Number.isFinite(trend);
     const trendValue = hasTrend ? trend : undefined;
 
@@ -53,14 +52,39 @@ export default function KPICard({
             ? 'error.main'
             : 'divider';
 
+    const trendDirection = trendValue === undefined
+        ? null
+        : trendValue > 0
+            ? 'hausse'
+            : trendValue < 0
+                ? 'baisse'
+                : 'stable';
+
+    const trendInterpretation = trendColor === 'success'
+        ? 'favorable'
+        : trendColor === 'error'
+            ? 'défavorable'
+            : 'neutre';
+
     const hasCompared = comparedValue !== undefined && comparedValue !== null;
     const comparedText = hasCompared
         ? `${typeof comparedValue === 'number' ? comparedValue.toLocaleString('fr-FR') : comparedValue}${comparedUnit ? ` ${comparedUnit}` : ''}`
         : null;
 
+    const valueText = `${typeof value === 'number' ? value.toLocaleString('fr-FR') : value}${unit ? ` ${unit}` : ''}`;
+    const ariaDescription = [
+        label,
+        `Valeur ${valueText}`,
+        comparedText ? `Comparé à la période précédente ${comparedText}` : null,
+        trendDirection
+            ? `Tendance ${trendDirection} ${Math.abs(trendValue ?? 0)}${trendUnit}, ${trendInterpretation}`
+            : null,
+        status ? `Statut ${status}` : null,
+    ].filter(Boolean).join('. ');
+
     const cardContent = (
         <>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography component="h3" variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
                 {label}
             </Typography>
             {description && (
@@ -70,7 +94,7 @@ export default function KPICard({
             )}
             {comparedText && (
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.25 }}>
-                    Compare a la periode precedente: {comparedText}
+                    Comparé à la période précédente: {comparedText}
                 </Typography>
             )}
 
@@ -88,6 +112,7 @@ export default function KPICard({
             {trendValue !== undefined && (
                 <Box sx={{ mt: 1 }}>
                     <Chip
+                        aria-hidden="true"
                         icon={trendIcon ?? undefined}
                         label={`${trendValue > 0 ? '+' : ''}${trendValue}${trendUnit}`}
                         color={trendColor}
@@ -95,7 +120,16 @@ export default function KPICard({
                         variant="filled"
                         sx={{ fontWeight: 700 }}
                     />
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+                        Tendance: {trendDirection} ({trendInterpretation})
+                    </Typography>
                 </Box>
+            )}
+
+            {status && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    Statut: {status}
+                </Typography>
             )}
         </>
     );
@@ -113,7 +147,9 @@ export default function KPICard({
         return (
             <Card sx={cardSx}>
                 <CardActionArea
-                    onClick={() => navigate(to)}
+                    component={RouterLink}
+                    to={to}
+                    aria-label={ariaDescription}
                     sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between' }}
                 >
                     {cardContent}

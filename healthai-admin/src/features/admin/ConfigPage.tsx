@@ -31,6 +31,7 @@ import {
     updateSystemParams,
 } from '@/services/config.service';
 import { LoadingState, ErrorState, PageHeader } from '@/components/feedback';
+import AccessibleColumnHeaderSortIcon from '@/components/shared/AccessibleColumnHeaderSortIcon';
 import { useNotificationStore } from '@/stores/notification.store';
 import { getErrorMessage } from '@/lib/error.utils';
 import { DataSource } from '@/types';
@@ -201,6 +202,7 @@ export default function ConfigPage() {
                     rows={config.validationRules}
                     columns={ruleColumns}
                     aria-label="Tableau des règles de validation physiologique"
+                    slots={{ columnHeaderSortIcon: AccessibleColumnHeaderSortIcon }}
                     initialState={{
                         pagination: { paginationModel: { pageSize: 10 } },
                     }}

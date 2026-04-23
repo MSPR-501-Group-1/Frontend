@@ -1,4 +1,5 @@
 import { Card, Typography, Box } from '@mui/material';
+import { useId } from 'react';
 import {
     ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Legend,
@@ -8,8 +9,9 @@ import {
     TOOLTIP_STYLE, ANIMATION_DURATION, ANIMATION_DURATION_SLOW,
     LEGEND_STYLE, LEGEND_ICON_SIZE, LEGEND_ICON_TYPE,
 } from '@/lib/chart.constants';
-import { formatShortDate } from '@/lib/formatters';
+import { formatShortDate, formatTooltipDate } from '@/lib/formatters';
 import type { MultiSeriesPoint } from '@/types';
+import ChartDataTable from './ChartDataTable';
 
 interface AnomalyTrendChartProps {
     data: MultiSeriesPoint[];
@@ -18,17 +20,26 @@ interface AnomalyTrendChartProps {
 }
 
 export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTrendChartProps) {
+    const chartId = useId();
+    const titleId = `${chartId}-title`;
+
     return (
-        <Card sx={{ p: 2.5, height: '100%' }}>
+        <Card component="section" aria-labelledby={titleId} sx={{ p: 2.5, height: '100%' }}>
             <Box sx={{ mb: 2 }}>
-                <Typography variant="h6">{title}</Typography>
+                <Typography id={titleId} variant="h6" component="h3">
+                    {title}
+                </Typography>
                 {subtitle && (
                     <Typography variant="body2" color="text.secondary">
                         {subtitle}
                     </Typography>
                 )}
             </Box>
-            <Box sx={{ width: '100%', height: 320 }} role="img" aria-label={title}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Visualisation graphique accompagnée d'un tableau de données accessible ci-dessous.
+            </Typography>
+
+            <Box sx={{ width: '100%', height: 320 }} aria-hidden="true">
                 <ResponsiveContainer>
                     <ComposedChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                         <CartesianGrid strokeDasharray={GRID_DASH} stroke={GRID_STROKE} />
@@ -46,7 +57,7 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                                 value: 'Anomalies',
                                 angle: -90,
                                 position: 'insideLeft',
-                                style: { fontSize: 11, fill: '#94A3B8' },
+                                style: { fontSize: 11, fill: '#334155' },
                             }}
                         />
                         <YAxis
@@ -60,7 +71,7 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                                 value: 'Taux résolution',
                                 angle: 90,
                                 position: 'insideRight',
-                                style: { fontSize: 11, fill: '#94A3B8' },
+                                style: { fontSize: 11, fill: '#334155' },
                             }}
                         />
                         <Tooltip
@@ -78,7 +89,7 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                         <Bar
                             yAxisId="count"
                             dataKey="Nouvelles"
-                            fill="#F87171"
+                            fill="#B91C1C"
                             radius={[4, 4, 0, 0]}
                             barSize={16}
                             animationDuration={ANIMATION_DURATION}
@@ -86,7 +97,7 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                         <Bar
                             yAxisId="count"
                             dataKey="Résolues"
-                            fill="#34D399"
+                            fill="#166534"
                             radius={[4, 4, 0, 0]}
                             barSize={16}
                             animationDuration={ANIMATION_DURATION}
@@ -95,10 +106,10 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                             yAxisId="rate"
                             type="monotone"
                             dataKey="Taux"
-                            stroke="#7C3AED"
+                            stroke="#6D28D9"
                             strokeWidth={2.5}
-                            dot={{ r: 3, fill: '#7C3AED', strokeWidth: 0 }}
-                            activeDot={{ r: 5, fill: '#fff', stroke: '#7C3AED', strokeWidth: 2 }}
+                            dot={{ r: 3, fill: '#6D28D9', strokeWidth: 0 }}
+                            activeDot={{ r: 5, fill: '#fff', stroke: '#6D28D9', strokeWidth: 2 }}
                             animationDuration={ANIMATION_DURATION_SLOW}
                         />
                         <Legend
@@ -109,6 +120,23 @@ export default function AnomalyTrendChart({ data, title, subtitle }: AnomalyTren
                     </ComposedChart>
                 </ResponsiveContainer>
             </Box>
+
+            <ChartDataTable<MultiSeriesPoint>
+                title={title}
+                rowHeaderKey="date"
+                columns={[
+                    { key: 'date', label: 'Date', format: (value) => formatTooltipDate(value) },
+                    { key: 'Nouvelles', label: 'Nouvelles', format: (value) => String(Number(value ?? 0)) },
+                    { key: 'Résolues', label: 'Résolues', format: (value) => String(Number(value ?? 0)) },
+                    {
+                        key: 'Taux',
+                        label: 'Taux de résolution',
+                        format: (value) => `${Number(value ?? 0)}%`,
+                    },
+                ]}
+                rows={data}
+                summaryLabel={`Afficher les données tabulaires de ${title}`}
+            />
         </Card>
     );
 }
