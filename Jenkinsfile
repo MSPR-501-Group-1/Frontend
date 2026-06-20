@@ -89,7 +89,7 @@ pipeline {
             echo "Pipeline frontend-admin-dashboard : FAILURE (build #${BUILD_NUMBER})"
         }
         always {
-            cleanWs()
+            deleteDir()
         }
     }
 }
